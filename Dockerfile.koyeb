@@ -1,19 +1,22 @@
-# Multi-stage build for React + Node.js app
+# Alternative Dockerfile for Koyeb deployment
 FROM node:18-alpine AS client-build
 
 # Set working directory for client
 WORKDIR /app/client
 
-# Copy client package files first for better caching
+# Copy package files first for better caching
 COPY client/package*.json ./
 
-# Install client dependencies (including dev dependencies for build)
+# Install client dependencies
 RUN npm ci --include=dev
 
-# Copy entire client directory (including public folder)
-COPY client/ ./
+# Copy client source code and public folder explicitly
+COPY client/src ./src
+COPY client/public ./public
+COPY client/tsconfig.json ./
+COPY client/README.md ./
 
-# Verify that public folder and index.html exist
+# Verify files exist
 RUN ls -la public/ && test -f public/index.html
 
 # Build the React app
@@ -22,10 +25,9 @@ RUN npm run build
 # Production stage
 FROM node:18-alpine AS production
 
-# Set working directory
 WORKDIR /app
 
-# Install PM2 globally for process management
+# Install PM2
 RUN npm install -g pm2
 
 # Copy server package files
@@ -37,7 +39,7 @@ RUN npm ci --only=production
 # Copy server source code
 COPY server/ ./
 
-# Copy built React app from client-build stage
+# Copy built React app
 COPY --from=client-build /app/client/build ./public
 
 # Create uploads directory
@@ -46,8 +48,8 @@ RUN mkdir -p uploads
 # Expose port
 EXPOSE 5000
 
-# Set environment to production
+# Set environment
 ENV NODE_ENV=production
 
-# Start the application with PM2
+# Start application
 CMD ["pm2-runtime", "start", "index.js", "--name", "kba-app"]
