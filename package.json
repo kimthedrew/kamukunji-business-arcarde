@@ -7,11 +7,12 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
-    "build": "cd client && npm run build",
+    "build": "cd client && npm install && npm run build",
     "install-all": "npm install && cd client && npm install",
     "start": "node server/index.js",
     "start:prod": "NODE_ENV=production node server/index.js",
-    "build:prod": "npm run build && npm run start:prod"
+    "build:prod": "npm run build && npm run start:prod",
+    "heroku-postbuild": "npm run build"
   },
   "dependencies": {
     "@cloudinary/react": "^1.14.3",
