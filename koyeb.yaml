@@ -1,0 +1,31 @@
+name: kba-app
+services:
+  - name: kba-backend
+    type: web
+    image:
+      type: dockerfile
+      dockerfile_path: ./Dockerfile
+    ports:
+      - port: 5000
+        http_path: /
+    env:
+      - name: NODE_ENV
+        value: production
+      - name: PORT
+        value: "5000"
+    regions:
+      - fra
+    instance_types:
+      - nano
+    scaling:
+      min_scale: 1
+      max_scale: 3
+    health_checks:
+      http:
+        path: /api/health
+        port: 5000
+        initial_delay: 30s
+        interval: 30s
+        timeout: 10s
+        unhealthy_threshold: 3
+        healthy_threshold: 2
