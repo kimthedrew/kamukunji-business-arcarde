@@ -214,7 +214,8 @@ if (actualPublicPath) {
         req.path.endsWith('.woff2') || 
         req.path.endsWith('.ttf') || 
         req.path.endsWith('.eot')) {
-      return res.status(404).json({ message: 'Static file not found' });
+      console.log(`Static file not found: ${req.path}`);
+      return res.status(404).json({ message: 'Static file not found', path: req.path });
     }
     
     // Debug: log the request
