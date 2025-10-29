@@ -6,13 +6,13 @@ services:
       type: dockerfile
       dockerfile_path: ./Dockerfile
     ports:
-      - port: 5000
+      - port: 8000
         http_path: /
     env:
       - name: NODE_ENV
         value: production
       - name: PORT
-        value: "5000"
+        value: "8000"
     regions:
       - fra
     instance_types:
@@ -23,7 +23,7 @@ services:
     health_checks:
       http:
         path: /api/health
-        port: 5000
+        port: 8000
         initial_delay: 30s
         interval: 30s
         timeout: 10s

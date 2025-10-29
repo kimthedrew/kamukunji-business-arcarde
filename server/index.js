@@ -12,7 +12,7 @@ const adminRoutes = require('./routes/admin');
 const { router: notificationRoutes, sendNotificationToShop } = require('./routes/notifications');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Configure Cloudinary
 cloudinary.config({

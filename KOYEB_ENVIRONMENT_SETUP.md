@@ -20,7 +20,7 @@ Go to **Settings** → **Environment Variables** and add these variables:
 
 ```bash
 # Server Configuration
-PORT=5000
+PORT=8000
 NODE_ENV=production
 
 # JWT Secret (generate a strong secret for production)
@@ -92,7 +92,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ## 📋 Environment Variables Checklist
 
-- [ ] `PORT=5000`
+- [ ] `PORT=8000`
 - [ ] `NODE_ENV=production`
 - [ ] `JWT_SECRET` (strong secret key)
 - [ ] `SUPABASE_PROJECT_URL` (your Supabase URL)
