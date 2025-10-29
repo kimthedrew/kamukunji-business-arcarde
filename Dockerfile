@@ -28,6 +28,11 @@ RUN rm -rf server/public && mkdir -p server/public && cp -r client/build/* serve
 # Debug: Verify files were copied
 RUN echo "Contents of server/public directory:" && ls -la server/public/ || echo "Server public directory not found"
 RUN echo "Checking for index.html:" && test -f server/public/index.html && echo "index.html exists" || echo "index.html not found"
+RUN echo "Checking for main JS files:" && ls -la server/public/static/js/ || echo "No JS files found"
+RUN echo "Checking for main CSS files:" && ls -la server/public/static/css/ || echo "No CSS files found"
+
+# Verify the server can start
+RUN echo "Testing server startup..." && cd server && timeout 10s node index.js || echo "Server test completed"
 
 # Create uploads directory
 RUN mkdir -p server/uploads
