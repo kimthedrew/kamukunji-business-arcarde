@@ -145,8 +145,16 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    port: PORT,
+    staticFiles: actualPublicPath ? 'available' : 'not available'
   });
+});
+
+// Simple health check for Koyeb
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 // Routes
@@ -234,10 +242,11 @@ if (actualPublicPath) {
 }
 
 // Start the server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Static files served from: ${actualPublicPath || 'FALLBACK'}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🌍 Server listening on 0.0.0.0:${PORT}`);
 });
 
 // Handle server errors

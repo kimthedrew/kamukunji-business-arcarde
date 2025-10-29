@@ -34,6 +34,9 @@ RUN echo "Checking for main CSS files:" && ls -la server/public/static/css/ || e
 # Verify the server can start
 RUN echo "Testing server startup..." && cd server && timeout 10s node index.js || echo "Server test completed"
 
+# Add a simple health check
+RUN echo '{"status":"ok","timestamp":"'$(date -Iseconds)'"}' > server/public/health.json
+
 # Create uploads directory
 RUN mkdir -p server/uploads
 
