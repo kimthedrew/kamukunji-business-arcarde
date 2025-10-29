@@ -70,7 +70,9 @@ if (!require('fs').existsSync(publicPath)) {
 }
 
 if (actualPublicPath) {
+  // Serve static files from the React build
   app.use(express.static(actualPublicPath));
+  console.log('Static files will be served from:', actualPublicPath);
 } else {
   // Fallback: serve a simple HTML page if no public directory exists
   app.get('*', (req, res) => {
@@ -152,12 +154,23 @@ app.post('/api/upload', async (req, res) => {
 
 // Serve React app (only if we have a public directory)
 if (actualPublicPath) {
+  // Catch-all handler: send back React's index.html file for any non-API routes
   app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API endpoint not found' });
+    }
+    
+    // Debug: log the request
+    console.log(`Request for: ${req.path}`);
+    
     const indexPath = path.join(actualPublicPath, 'index.html');
     console.log('Serving React app from:', indexPath);
+    
     if (require('fs').existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
+      console.error('React app not found at:', indexPath);
       res.status(404).send('React app not found');
     }
   });
