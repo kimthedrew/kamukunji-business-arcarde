@@ -19,6 +19,11 @@ RUN ls -la public/ && test -f public/index.html
 # Build the React app
 RUN npm run build
 
+# Debug: Verify build was successful
+RUN echo "Contents of client directory after build:" && ls -la ./
+RUN echo "Contents of build directory:" && ls -la ./build/ || echo "Build directory not found"
+RUN echo "Checking for index.html:" && test -f ./build/index.html && echo "index.html exists" || echo "index.html not found"
+
 # Production stage
 FROM node:18-alpine AS production
 
@@ -39,6 +44,10 @@ COPY server/ ./
 
 # Copy built React app from client-build stage
 COPY --from=client-build /app/client/build ./public
+
+# Debug: List contents to verify copy worked
+RUN echo "Contents of public directory:" && ls -la ./public/ || echo "Public directory not found"
+RUN echo "Contents of root directory:" && ls -la ./
 
 # Create uploads directory
 RUN mkdir -p uploads
