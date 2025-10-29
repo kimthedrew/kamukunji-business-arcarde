@@ -22,8 +22,8 @@ COPY client/ ./client/
 # Build React app
 RUN cd client && npm run build
 
-# Copy built React app to server public directory
-RUN mkdir -p server/public && cp -r client/build/* server/public/
+# Clean copy of built React app to server public directory
+RUN rm -rf server/public && mkdir -p server/public && cp -r client/build/* server/public/
 
 # Debug: Verify files were copied
 RUN echo "Contents of server/public directory:" && ls -la server/public/ || echo "Server public directory not found"
