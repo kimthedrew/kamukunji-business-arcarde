@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Set working directory
-WORKDIR /app
+WORKDIR /workspace
 
 # Install PM2 globally for process management
 RUN npm install -g pm2

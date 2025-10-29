@@ -32,6 +32,21 @@ console.log('Public directory exists:', require('fs').existsSync(publicPath));
 console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
 
+// Debug: List workspace contents
+console.log('Contents of workspace directory:');
+try {
+  const fs = require('fs');
+  const workspaceContents = fs.readdirSync('/workspace');
+  console.log('Workspace contents:', workspaceContents);
+  
+  if (fs.existsSync('/workspace/server')) {
+    const serverContents = fs.readdirSync('/workspace/server');
+    console.log('Server directory contents:', serverContents);
+  }
+} catch (error) {
+  console.log('Error listing workspace contents:', error.message);
+}
+
 // Check if public directory exists, if not try alternative paths
 let actualPublicPath = publicPath;
 if (!require('fs').existsSync(publicPath)) {
@@ -39,7 +54,9 @@ if (!require('fs').existsSync(publicPath)) {
   const altPaths = [
     path.join(process.cwd(), 'public'),
     path.join(__dirname, '..', 'public'),
-    path.join(process.cwd(), 'server', 'public')
+    path.join(process.cwd(), 'server', 'public'),
+    path.join('/workspace', 'public'),
+    path.join('/workspace', 'server', 'public')
   ];
   
   for (const altPath of altPaths) {
