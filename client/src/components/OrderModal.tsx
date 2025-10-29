@@ -44,7 +44,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
     setMessage('');
 
     try {
-      await axios.post('http://localhost:8000/api/orders', {
+      await axios.post('/api/orders', {
         shop_id: product.shop_id,
         customer_name: formData.customer_name,
         customer_contact: formData.customer_contact,

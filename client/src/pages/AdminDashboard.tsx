@@ -73,8 +73,8 @@ const AdminDashboard: React.FC = () => {
       console.log('Loading admin data with token:', token ? 'present' : 'missing');
 
       const [shopsRes, statsRes] = await Promise.all([
-        axios.get('http://localhost:8000/api/admin/shops', { headers }),
-        axios.get('http://localhost:8000/api/admin/stats', { headers })
+        axios.get('/api/admin/shops', { headers }),
+        axios.get('/api/admin/stats', { headers })
       ]);
 
       console.log('Shops response:', shopsRes.data);
@@ -104,7 +104,7 @@ const AdminDashboard: React.FC = () => {
   const handleShopStatusUpdate = async (shopId: number, status: string) => {
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.put(`http://localhost:8000/api/admin/shops/${shopId}/status`, 
+      await axios.put(`/api/admin/shops/${shopId}/status`, 
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -117,7 +117,7 @@ const AdminDashboard: React.FC = () => {
   const handleSubscriptionUpdate = async (shopId: number, plan: string, monthlyFee: number) => {
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.put(`http://localhost:8000/api/admin/shops/${shopId}/subscription`, 
+      await axios.put(`/api/admin/shops/${shopId}/subscription`, 
         { plan, monthly_fee: monthlyFee, status: 'active' },
         { headers: { Authorization: `Bearer ${token}` } }
       );

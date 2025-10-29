@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -15,7 +15,7 @@ const Home: React.FC = () => {
 
   const fetchShops = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/shops');
+      const response = await api.get('/shops');
       setShops(response.data.slice(0, 3)); // Show only first 3 shops
     } catch (error) {
       console.error('Error fetching shops:', error);

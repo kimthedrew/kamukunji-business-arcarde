@@ -79,9 +79,9 @@ const ShopDashboard: React.FC = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [productsRes, ordersRes, shopRes] = await Promise.all([
-        axios.get('http://localhost:8000/api/products/my-products', { headers }),
-        axios.get('http://localhost:8000/api/orders/my-orders', { headers }),
-        axios.get('http://localhost:8000/api/shops/profile', { headers })
+        axios.get('/api/products/my-products', { headers }),
+        axios.get('/api/orders/my-orders', { headers }),
+        axios.get('/api/shops/profile', { headers })
       ]);
 
       setProducts(productsRes.data);
@@ -106,7 +106,7 @@ const ShopDashboard: React.FC = () => {
 
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(
-        `http://localhost:8000/api/products/my-products/search?query=${encodeURIComponent(query)}`,
+        `/api/products/my-products/search?query=${encodeURIComponent(query)}`,
         { headers }
       );
       
@@ -155,7 +155,7 @@ const ShopDashboard: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/products/${productId}`, {
+      await axios.delete(`/api/products/${productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       loadData();
@@ -167,7 +167,7 @@ const ShopDashboard: React.FC = () => {
   const handleUpdateOrderStatus = async (orderId: number, status: string) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:8000/api/orders/${orderId}/status`, 
+      await axios.put(`/api/orders/${orderId}/status`, 
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );

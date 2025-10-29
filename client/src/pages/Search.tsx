@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import ProductCard from '../components/ProductCard';
 import OrderModal from '../components/OrderModal';
 import './Search.css';
@@ -44,7 +44,7 @@ const Search: React.FC = () => {
       if (filters.minPrice) params.append('minPrice', filters.minPrice);
       if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
       
-      const response = await axios.get(`http://localhost:8000/api/products/search?${params}`);
+      const response = await api.get(`/products/search?${params}`);
       setProducts(response.data);
     } catch (err) {
       setError('Failed to search products. Please try again.');

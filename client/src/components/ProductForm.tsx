@@ -86,7 +86,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         try {
           const base64 = e.target?.result as string;
           
-          const response = await axios.post('http://localhost:8000/api/upload', {
+          const response = await axios.post('/api/upload', {
             image: base64
           });
           
@@ -170,9 +170,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
       console.log('Submitting product data:', productData);
 
       if (product) {
-        await axios.put(`http://localhost:8000/api/products/${product.id}`, productData, { headers });
+        await axios.put(`/api/products/${product.id}`, productData, { headers });
       } else {
-        await axios.post('http://localhost:8000/api/products', productData, { headers });
+        await axios.post('/api/products', productData, { headers });
       }
 
       onSave();

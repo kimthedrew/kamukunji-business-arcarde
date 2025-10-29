@@ -86,14 +86,42 @@
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+    padding: 12px 0;
   }
   
   .nav {
-    gap: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .logo h1 {
-    font-size: 20px;
+    font-size: 18px;
+    text-align: center;
+  }
+  
+  .nav-link, .shop-link, .admin-link, .logout-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 8px 0;
+  }
+  
+  .nav {
+    gap: 8px;
+  }
+  
+  .logo h1 {
+    font-size: 16px;
+  }
+  
+  .nav-link, .shop-link, .admin-link, .logout-btn {
+    padding: 4px 8px;
+    font-size: 12px;
   }
 }

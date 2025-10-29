@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
+import PasswordInput from '../components/PasswordInput';
 import './AdminLogin.css';
 
 const AdminLogin: React.FC = () => {
@@ -24,7 +25,7 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8000/api/admin/login', formData);
+      const response = await api.post('/admin/login', formData);
       
       // Store token and admin info
       localStorage.setItem('adminToken', response.data.token);
@@ -72,12 +73,11 @@ const AdminLogin: React.FC = () => {
 
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <input
-                  type="password"
+                <PasswordInput
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="form-input"
+                  placeholder="Enter your password"
                   required
                 />
               </div>

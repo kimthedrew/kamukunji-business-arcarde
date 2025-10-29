@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
+import PasswordInput from '../components/PasswordInput';
 import './ShopRegister.css';
 
 const ShopRegister: React.FC = () => {
@@ -44,7 +45,7 @@ const ShopRegister: React.FC = () => {
 
     try {
       const { confirmPassword, ...registrationData } = formData;
-      await axios.post('http://localhost:8000/api/auth/register', registrationData);
+      await api.post('/auth/register', registrationData);
       
       setSuccess('Shop registered successfully! You can now login.');
       setTimeout(() => {
@@ -139,12 +140,10 @@ const ShopRegister: React.FC = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Password *</label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="form-input"
                     placeholder="At least 6 characters"
                     required
                   />
@@ -152,12 +151,10 @@ const ShopRegister: React.FC = () => {
 
                 <div className="form-group">
                   <label className="form-label">Confirm Password *</label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="form-input"
                     placeholder="Confirm your password"
                     required
                   />
