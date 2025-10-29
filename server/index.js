@@ -33,6 +33,7 @@ console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
 
 // Check if public directory exists, if not try alternative paths
+let actualPublicPath = publicPath;
 if (!require('fs').existsSync(publicPath)) {
   console.log('Public directory not found, checking alternative paths...');
   const altPaths = [
@@ -43,10 +44,51 @@ if (!require('fs').existsSync(publicPath)) {
   
   for (const altPath of altPaths) {
     console.log('Checking:', altPath, 'exists:', require('fs').existsSync(altPath));
+    if (require('fs').existsSync(altPath)) {
+      actualPublicPath = altPath;
+      console.log('Found public directory at:', actualPublicPath);
+      break;
+    }
+  }
+  
+  // If still not found, create a fallback response
+  if (!require('fs').existsSync(actualPublicPath)) {
+    console.log('No public directory found anywhere. Creating fallback response.');
+    actualPublicPath = null;
   }
 }
 
-app.use(express.static(publicPath));
+if (actualPublicPath) {
+  app.use(express.static(actualPublicPath));
+} else {
+  // Fallback: serve a simple HTML page if no public directory exists
+  app.get('*', (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KBA - Under Maintenance</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .container { max-width: 600px; margin: 0 auto; }
+            .error { color: #e74c3c; }
+            .info { color: #3498db; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="error">Application Under Maintenance</h1>
+            <p>The frontend files are not available. Please check the deployment logs.</p>
+            <div class="info">
+              <p>API endpoints are working:</p>
+              <p><a href="/api/health">Health Check</a></p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -97,12 +139,18 @@ app.post('/api/upload', async (req, res) => {
   }
 });
 
-// Serve React app
-app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, 'public', 'index.html');
-  console.log('Serving React app from:', indexPath);
-  res.sendFile(indexPath);
-});
+// Serve React app (only if we have a public directory)
+if (actualPublicPath) {
+  app.get('*', (req, res) => {
+    const indexPath = path.join(actualPublicPath, 'index.html');
+    console.log('Serving React app from:', indexPath);
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('React app not found');
+    }
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
