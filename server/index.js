@@ -89,6 +89,27 @@ if (actualPublicPath) {
     }
   }));
   console.log('Static files will be served from:', actualPublicPath);
+  
+  // Add middleware to log static file requests
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/static/') || 
+        req.path.endsWith('.js') || 
+        req.path.endsWith('.css') || 
+        req.path.endsWith('.json') || 
+        req.path.endsWith('.ico') || 
+        req.path.endsWith('.png') || 
+        req.path.endsWith('.jpg') || 
+        req.path.endsWith('.jpeg') || 
+        req.path.endsWith('.gif') || 
+        req.path.endsWith('.svg') || 
+        req.path.endsWith('.woff') || 
+        req.path.endsWith('.woff2') || 
+        req.path.endsWith('.ttf') || 
+        req.path.endsWith('.eot')) {
+      console.log(`Static file request: ${req.path}`);
+    }
+    next();
+  });
 } else {
   // Fallback: serve a simple HTML page if no public directory exists
   app.get('*', (req, res) => {
@@ -170,15 +191,34 @@ app.post('/api/upload', async (req, res) => {
 
 // Serve React app (only if we have a public directory)
 if (actualPublicPath) {
-  // Catch-all handler: send back React's index.html file for any non-API routes
+  // Catch-all handler: send back React's index.html file for page routes only
+  // This should come AFTER static file middleware to avoid intercepting static files
   app.get('*', (req, res) => {
     // Skip API routes
     if (req.path.startsWith('/api/')) {
       return res.status(404).json({ message: 'API endpoint not found' });
     }
     
+    // Skip static file requests - these should be handled by express.static middleware
+    if (req.path.startsWith('/static/') || 
+        req.path.endsWith('.js') || 
+        req.path.endsWith('.css') || 
+        req.path.endsWith('.json') || 
+        req.path.endsWith('.ico') || 
+        req.path.endsWith('.png') || 
+        req.path.endsWith('.jpg') || 
+        req.path.endsWith('.jpeg') || 
+        req.path.endsWith('.gif') || 
+        req.path.endsWith('.svg') || 
+        req.path.endsWith('.woff') || 
+        req.path.endsWith('.woff2') || 
+        req.path.endsWith('.ttf') || 
+        req.path.endsWith('.eot')) {
+      return res.status(404).json({ message: 'Static file not found' });
+    }
+    
     // Debug: log the request
-    console.log(`Request for: ${req.path}`);
+    console.log(`Serving React app for route: ${req.path}`);
     
     const indexPath = path.join(actualPublicPath, 'index.html');
     console.log('Serving React app from:', indexPath);
