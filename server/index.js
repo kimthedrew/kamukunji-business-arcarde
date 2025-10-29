@@ -70,8 +70,24 @@ if (!require('fs').existsSync(publicPath)) {
 }
 
 if (actualPublicPath) {
-  // Serve static files from the React build
-  app.use(express.static(actualPublicPath));
+  // Serve static files from the React build with cache headers
+  app.use(express.static(actualPublicPath, {
+    maxAge: '1d', // Cache for 1 day
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      // Don't cache HTML files to ensure fresh content
+      if (path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Cache JS and CSS files for 1 day
+      else if (path.endsWith('.js') || path.endsWith('.css')) {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      }
+    }
+  }));
   console.log('Static files will be served from:', actualPublicPath);
 } else {
   // Fallback: serve a simple HTML page if no public directory exists
