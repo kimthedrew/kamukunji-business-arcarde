@@ -7,11 +7,12 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "cd client && npm start",
-    "build": "bash scripts/koyeb-build.sh",
+    "build": "cd client && npm install && npm run build && cd .. && mkdir -p server/public && cp -r client/build/* server/public/",
     "install-all": "npm install && cd client && npm install",
     "start": "node server/index.js",
     "start:prod": "NODE_ENV=production node server/index.js",
     "build:prod": "npm run build && npm run start:prod",
+    "heroku-prebuild": "echo 'Preparing for build...' && ls -la && echo 'Client directory:' && ls -la client/",
     "heroku-postbuild": "npm run build"
   },
   "dependencies": {
