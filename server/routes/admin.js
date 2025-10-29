@@ -151,35 +151,36 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     const adminId = req.user.admin_id;
 
     // Get current admin
-    db.get('SELECT * FROM admins WHERE id = ?', [adminId], async (err, admin) => {
-      if (err) {
-        return res.status(500).json({ message: 'Database error' });
-      }
-      if (!admin) {
-        return res.status(404).json({ message: 'Admin not found' });
-      }
+    const { data: admin, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('id', adminId)
+      .single();
 
-      // Verify current password
-      const isValidPassword = await bcrypt.compare(currentPassword, admin.password);
-      if (!isValidPassword) {
-        return res.status(400).json({ message: 'Current password is incorrect' });
-      }
+    if (adminError || !admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
 
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, admin.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
 
-      // Update password
-      db.run(
-        'UPDATE admins SET password = ? WHERE id = ?',
-        [hashedPassword, adminId],
-        function(err) {
-          if (err) {
-            return res.status(500).json({ message: 'Failed to update password' });
-          }
-          res.json({ message: 'Password updated successfully' });
-        }
-      );
-    });
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    const { error: updateError } = await supabase
+      .from('admins')
+      .update({ password: hashedPassword })
+      .eq('id', adminId);
+
+    if (updateError) {
+      return res.status(500).json({ message: 'Failed to update password' });
+    }
+
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

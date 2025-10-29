@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
+import PasswordInput from './PasswordInput';
 import './ChangePasswordModal.css';
 
 interface ChangePasswordModalProps {
@@ -44,16 +45,13 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose, user
     }
 
     try {
-      const token = localStorage.getItem(userType === 'admin' ? 'adminToken' : 'token');
       const endpoint = userType === 'admin' 
-        ? '/api/admin/change-password'
-        : '/api/shops/change-password';
+        ? '/admin/change-password'
+        : '/shops/change-password';
 
-      await axios.put(endpoint, {
+      await api.put(endpoint, {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       setSuccess('Password updated successfully!');
@@ -90,39 +88,34 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose, user
 
           <div className="form-group">
             <label className="form-label">Current Password *</label>
-            <input
-              type="password"
+            <PasswordInput
               name="currentPassword"
               value={formData.currentPassword}
               onChange={handleChange}
-              className="form-input"
+              placeholder="Enter current password"
               required
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">New Password *</label>
-            <input
-              type="password"
+            <PasswordInput
               name="newPassword"
               value={formData.newPassword}
               onChange={handleChange}
-              className="form-input"
+              placeholder="Enter new password"
               required
-              minLength={6}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">Confirm New Password *</label>
-            <input
-              type="password"
+            <PasswordInput
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="form-input"
+              placeholder="Confirm new password"
               required
-              minLength={6}
             />
           </div>
 
