@@ -25,7 +25,28 @@ cloudinary.config({
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from public directory
+const publicPath = path.join(__dirname, 'public');
+console.log('Serving static files from:', publicPath);
+console.log('Public directory exists:', require('fs').existsSync(publicPath));
+console.log('Current working directory:', process.cwd());
+console.log('__dirname:', __dirname);
+
+// Check if public directory exists, if not try alternative paths
+if (!require('fs').existsSync(publicPath)) {
+  console.log('Public directory not found, checking alternative paths...');
+  const altPaths = [
+    path.join(process.cwd(), 'public'),
+    path.join(__dirname, '..', 'public'),
+    path.join(process.cwd(), 'server', 'public')
+  ];
+  
+  for (const altPath of altPaths) {
+    console.log('Checking:', altPath, 'exists:', require('fs').existsSync(altPath));
+  }
+}
+
+app.use(express.static(publicPath));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -78,7 +99,9 @@ app.post('/api/upload', async (req, res) => {
 
 // Serve React app
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  console.log('Serving React app from:', indexPath);
+  res.sendFile(indexPath);
 });
 
 app.listen(PORT, () => {
