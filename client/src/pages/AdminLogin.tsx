@@ -24,7 +24,7 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/login', formData);
+      const response = await axios.post('http://localhost:8000/api/admin/login', formData);
       
       // Store token and admin info
       localStorage.setItem('adminToken', response.data.token);

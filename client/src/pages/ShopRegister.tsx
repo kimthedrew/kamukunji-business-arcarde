@@ -44,7 +44,7 @@ const ShopRegister: React.FC = () => {
 
     try {
       const { confirmPassword, ...registrationData } = formData;
-      await axios.post('http://localhost:5000/api/auth/register', registrationData);
+      await axios.post('http://localhost:8000/api/auth/register', registrationData);
       
       setSuccess('Shop registered successfully! You can now login.');
       setTimeout(() => {

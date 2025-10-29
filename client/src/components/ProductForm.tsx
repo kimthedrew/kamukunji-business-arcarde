@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { cloudinaryConfig, getCloudinaryUrl } from '../config/cloudinary';
+import { getCloudinaryUrl } from '../config/cloudinary';
 import './ProductForm.css';
 
 interface Product {
@@ -86,7 +86,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         try {
           const base64 = e.target?.result as string;
           
-          const response = await axios.post('http://localhost:5000/api/upload', {
+          const response = await axios.post('http://localhost:8000/api/upload', {
             image: base64
           });
           
@@ -170,9 +170,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
       console.log('Submitting product data:', productData);
 
       if (product) {
-        await axios.put(`http://localhost:5000/api/products/${product.id}`, productData, { headers });
+        await axios.put(`http://localhost:8000/api/products/${product.id}`, productData, { headers });
       } else {
-        await axios.post('http://localhost:5000/api/products', productData, { headers });
+        await axios.post('http://localhost:8000/api/products', productData, { headers });
       }
 
       onSave();

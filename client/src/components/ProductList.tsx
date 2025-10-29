@@ -50,7 +50,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, onEdit, onDelete })
                 {product.image_url ? (
                   <img 
                     src={product.image_url.startsWith('/uploads/') 
-                      ? `http://localhost:5000${product.image_url}` 
+                      ? `http://localhost:8000${product.image_url}` 
                       : product.image_url
                     } 
                     alt={product.name}

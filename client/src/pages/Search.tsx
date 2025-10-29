@@ -44,7 +44,7 @@ const Search: React.FC = () => {
       if (filters.minPrice) params.append('minPrice', filters.minPrice);
       if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
       
-      const response = await axios.get(`http://localhost:5000/api/products/search?${params}`);
+      const response = await axios.get(`http://localhost:8000/api/products/search?${params}`);
       setProducts(response.data);
     } catch (err) {
       setError('Failed to search products. Please try again.');

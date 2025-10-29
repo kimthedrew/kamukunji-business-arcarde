@@ -3,7 +3,7 @@ import TokenHelper from './tokenHelper';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:8000/api',
   timeout: 10000,
 });
 

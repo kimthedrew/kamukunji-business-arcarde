@@ -15,7 +15,7 @@ const Home: React.FC = () => {
 
   const fetchShops = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/shops');
+      const response = await axios.get('http://localhost:8000/api/shops');
       setShops(response.data.slice(0, 3)); // Show only first 3 shops
     } catch (error) {
       console.error('Error fetching shops:', error);

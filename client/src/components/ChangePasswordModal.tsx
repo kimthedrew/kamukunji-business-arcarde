@@ -46,8 +46,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose, user
     try {
       const token = localStorage.getItem(userType === 'admin' ? 'adminToken' : 'token');
       const endpoint = userType === 'admin' 
-        ? 'http://localhost:5000/api/admin/change-password'
-        : 'http://localhost:5000/api/shops/change-password';
+        ? 'http://localhost:8000/api/admin/change-password'
+        : 'http://localhost:8000/api/shops/change-password';
 
       await axios.put(endpoint, {
         currentPassword: formData.currentPassword,

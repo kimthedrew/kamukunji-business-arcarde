@@ -32,7 +32,7 @@ class NotificationService {
       await navigator.serviceWorker.ready;
 
       // Get VAPID key from server
-      const response = await axios.get('http://localhost:5000/api/notifications/vapid-key');
+      const response = await axios.get('http://localhost:8000/api/notifications/vapid-key');
       const publicKey = response.data.publicKey;
 
       // Subscribe to push notifications
@@ -44,7 +44,7 @@ class NotificationService {
       // Send subscription to server
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/api/notifications/subscribe', {
+        await axios.post('http://localhost:8000/api/notifications/subscribe', {
           subscription
         }, {
           headers: { Authorization: `Bearer ${token}` }
@@ -67,7 +67,8 @@ class NotificationService {
   }
 }
 
-export default new NotificationService();
+const notificationService = new NotificationService();
+export default notificationService;
 
 
 

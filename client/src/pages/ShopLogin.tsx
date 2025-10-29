@@ -24,7 +24,7 @@ const ShopLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const response = await axios.post('http://localhost:8000/api/auth/login', formData);
       
       // Store token and shop info
       localStorage.setItem('token', response.data.token);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import ProductCard from '../components/ProductCard';
 import './ShopProducts.css';
 
@@ -12,16 +12,10 @@ const ShopProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (shopId) {
-      fetchShopProducts();
-    }
-  }, [shopId]);
-
   const fetchShopProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/shops/${shopId}/products`);
+      const response = await api.get(`/shops/${shopId}/products`);
       setShop(response.data.shop);
       setProducts(response.data.products);
     } catch (err) {
@@ -31,6 +25,13 @@ const ShopProducts = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (shopId) {
+      fetchShopProducts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopId]);
 
   if (loading) {
     return (

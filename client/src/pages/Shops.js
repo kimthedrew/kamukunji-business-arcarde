@@ -14,7 +14,7 @@ const Shops = () => {
   const fetchShops = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/shops');
+      const response = await axios.get('http://localhost:8000/api/shops');
       setShops(response.data);
     } catch (err) {
       setError('Failed to fetch shops');

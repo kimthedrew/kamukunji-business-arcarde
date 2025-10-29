@@ -58,7 +58,7 @@ cp .env.example .env
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000` (frontend) and `http://localhost:5000` (backend).
+The app will be available at `http://localhost:3000` (frontend) and `http://localhost:8000` (backend).
 
 ## Production Build
 
@@ -93,9 +93,16 @@ docker-compose up -d
 
 ## Database Setup
 
-1. Create a Supabase project
-2. Run the SQL schema from `server/supabase-schema.sql`
+The application uses Supabase as the primary database. You have two options:
+
+### Option 1: Use Supabase (Recommended)
+1. Create a Supabase project at https://supabase.com
+2. Run the SQL schema from `server/supabase-schema.sql` in your Supabase SQL editor
 3. Update your environment variables with Supabase credentials
+
+### Option 2: Use SQLite (Fallback)
+1. The application will automatically create a SQLite database if Supabase is not configured
+2. Database file will be created at `server/database.sqlite`
 
 ## API Endpoints
 
