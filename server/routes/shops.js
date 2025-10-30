@@ -99,7 +99,7 @@ router.get('/:id/products', async (req, res) => {
     // First verify the shop exists and is active
     const { data: shop, error: shopError } = await supabase
       .from('shops')
-      .select('id, shop_number, shop_name, contact, status')
+      .select('id, shop_number, shop_name, contact, status, till_number, payment_provider, payment_notes')
       .eq('id', shopId)
       .eq('status', 'active')
       .single();
@@ -129,6 +129,9 @@ router.get('/:id/products', async (req, res) => {
       shop_number: shop.shop_number,
       shop_name: shop.shop_name,
       contact: shop.contact,
+      till_number: shop.till_number || null,
+      payment_provider: shop.payment_provider || null,
+      payment_notes: shop.payment_notes || null,
       sizes: product.product_sizes.map(ps => `${ps.size}:${ps.in_stock ? '1' : '0'}:${ps.quantity || 0}`).join(',')
     }));
 

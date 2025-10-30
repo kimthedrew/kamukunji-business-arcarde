@@ -11,6 +11,9 @@ interface Product {
   shop_name: string;
   contact: string;
   sizes: string;
+  till_number?: string | null;
+  payment_provider?: string | null;
+  payment_notes?: string | null;
 }
 
 interface OrderModalProps {
@@ -87,6 +90,14 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
           <p><strong>Shop {product.shop_number}</strong> - {product.shop_name}</p>
           <p>Price: KSh {product.price.toLocaleString()}</p>
           <p>Contact: {product.contact}</p>
+          {(product.till_number || product.payment_provider || product.payment_notes) && (
+            <div style={{ marginTop: 8 }}>
+              <h4>Payment Details</h4>
+              {product.payment_provider && <p>Provider: {product.payment_provider}</p>}
+              {product.till_number && <p>Till No: {product.till_number}</p>}
+              {product.payment_notes && <p>Note: {product.payment_notes}</p>}
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="order-form">

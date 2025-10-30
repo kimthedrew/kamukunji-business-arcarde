@@ -14,7 +14,7 @@ router.get('/search', async (req, res) => {
       .from('products')
       .select(`
         *,
-        shops!inner(shop_number, shop_name, contact, status),
+        shops!inner(shop_number, shop_name, contact, status, till_number, payment_provider, payment_notes),
         product_sizes(size, in_stock)
       `)
       .neq('shops.status', 'closed');
@@ -50,6 +50,9 @@ router.get('/search', async (req, res) => {
       shop_number: product.shops.shop_number,
       shop_name: product.shops.shop_name,
       contact: product.shops.contact,
+      till_number: product.shops.till_number || null,
+      payment_provider: product.shops.payment_provider || null,
+      payment_notes: product.shops.payment_notes || null,
       sizes: product.product_sizes.map(ps => `${ps.size}:${ps.in_stock ? '1' : '0'}`).join(',')
     }));
     
