@@ -170,11 +170,18 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // Update shop profile (authenticated)
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const { shop_name, contact, email } = req.body;
+    const { shop_name, contact, email, till_number, payment_provider, payment_notes } = req.body;
     
     const { error } = await supabase
       .from('shops')
-      .update({ shop_name, contact, email })
+      .update({ 
+        shop_name, 
+        contact, 
+        email,
+        till_number: till_number ?? null,
+        payment_provider: payment_provider ?? null,
+        payment_notes: payment_notes ?? null
+      })
       .eq('id', req.user.shop_id);
 
     if (error) {

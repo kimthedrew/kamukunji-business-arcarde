@@ -10,14 +10,17 @@ interface Order {
   status: string;
   notes: string;
   created_at: string;
+  payment_reference?: string;
+  payment_status?: string;
 }
 
 interface OrdersListProps {
   orders: Order[];
   onUpdateStatus: (orderId: number, status: string) => void;
+  onConfirmPayment?: (orderId: number, decision: 'confirmed' | 'rejected') => void;
 }
 
-const OrdersList: React.FC<OrdersListProps> = ({ orders, onUpdateStatus }) => {
+const OrdersList: React.FC<OrdersListProps> = ({ orders, onUpdateStatus, onConfirmPayment }) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -88,6 +91,12 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onUpdateStatus }) => {
                   <span className="value">{order.notes}</span>
                 </div>
               )}
+              {order.payment_reference && (
+                <div className="detail-row">
+                  <span className="label">Payment Ref:</span>
+                  <span className="value">{order.payment_reference} {order.payment_status ? `• ${order.payment_status}` : ''}</span>
+                </div>
+              )}
             </div>
 
             <div className="order-actions">
@@ -101,6 +110,22 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onUpdateStatus }) => {
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+              {order.payment_reference && onConfirmPayment && (
+                <>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => onConfirmPayment(order.id, 'confirmed')}
+                  >
+                    Confirm Payment
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => onConfirmPayment(order.id, 'rejected')}
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}

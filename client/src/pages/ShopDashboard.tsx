@@ -37,6 +37,8 @@ interface Order {
   status: string;
   notes: string;
   created_at: string;
+  payment_reference?: string;
+  payment_status?: string;
 }
 
 const ShopDashboard: React.FC = () => {
@@ -177,6 +179,19 @@ const ShopDashboard: React.FC = () => {
     }
   };
 
+  const handleConfirmPayment = async (orderId: number, decision: 'confirmed' | 'rejected') => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`/api/orders/${orderId}/payment`, 
+        { payment_status: decision },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      loadData();
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="shop-dashboard">
@@ -298,6 +313,7 @@ const ShopDashboard: React.FC = () => {
             <OrdersList
               orders={orders}
               onUpdateStatus={handleUpdateOrderStatus}
+              onConfirmPayment={handleConfirmPayment}
             />
           </div>
         )}

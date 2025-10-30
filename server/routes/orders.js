@@ -8,7 +8,7 @@ const router = express.Router();
 // Create order (public)
 router.post('/', async (req, res) => {
   try {
-    const { shop_id, customer_name, customer_contact, product_id, size, notes } = req.body;
+    const { shop_id, customer_name, customer_contact, product_id, size, notes, payment_reference } = req.body;
     
     const { data: order, error } = await supabase
       .from('orders')
@@ -19,7 +19,9 @@ router.post('/', async (req, res) => {
         product_id,
         size,
         notes,
-        status: 'pending'
+        status: 'pending',
+        payment_reference: payment_reference || null,
+        payment_status: payment_reference ? 'pending' : 'unpaid'
       })
       .select()
       .single();
@@ -110,6 +112,41 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
     res.json({ message: 'Order status updated successfully' });
   } catch (error) {
     console.error('Order status update error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+// Confirm payment (authenticated - shop)
+router.put('/:id/payment', authenticateToken, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { payment_status } = req.body; // expected 'confirmed' or 'rejected'
+
+    const update = {
+      payment_status: payment_status,
+      paid_at: payment_status === 'confirmed' ? new Date().toISOString() : null,
+      confirmed_by: req.user.shop_id
+    };
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update(update)
+      .eq('id', orderId)
+      .eq('shop_id', req.user.shop_id)
+      .select();
+
+    if (error) {
+      console.error('Payment confirm error:', error);
+      return res.status(500).json({ message: 'Database error' });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: 'Order not found or not authorized' });
+    }
+
+    res.json({ message: 'Payment status updated' });
+  } catch (error) {
+    console.error('Payment confirm error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });

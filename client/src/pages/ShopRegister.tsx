@@ -11,7 +11,10 @@ const ShopRegister: React.FC = () => {
     contact: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    till_number: '',
+    payment_provider: '',
+    payment_notes: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -159,6 +162,45 @@ const ShopRegister: React.FC = () => {
                     required
                   />
                 </div>
+              </div>
+
+              {/* Optional Payment Details */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Till Number (Optional)</label>
+                  <input
+                    type="text"
+                    name="till_number"
+                    value={formData.till_number}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="e.g., 123456"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Payment Provider (Optional)</label>
+                  <input
+                    type="text"
+                    name="payment_provider"
+                    value={formData.payment_provider}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="e.g., M-Pesa, Airtel Money"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Payment Notes (Optional)</label>
+                <input
+                  type="text"
+                  name="payment_notes"
+                  value={formData.payment_notes}
+                  onChange={handleChange}
+                  className="form-input"
+                  placeholder="Any instructions for customers"
+                />
               </div>
 
               <button 

@@ -23,7 +23,8 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
     customer_name: '',
     customer_contact: '',
     size: '',
-    notes: ''
+    notes: '',
+    payment_reference: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -50,7 +51,8 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
         customer_contact: formData.customer_contact,
         product_id: product.id,
         size: formData.size,
-        notes: formData.notes
+        notes: formData.notes,
+        payment_reference: formData.payment_reference || undefined
       });
 
       setMessage('Order placed successfully! The shop owner will contact you soon.');
@@ -138,6 +140,18 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
               onChange={handleChange}
               className="form-textarea"
               placeholder="Any special requests or notes..."
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Payment Confirmation Code (Optional)</label>
+            <input
+              type="text"
+              name="payment_reference"
+              value={formData.payment_reference}
+              onChange={handleChange}
+              className="form-input"
+              placeholder="e.g., M-Pesa code"
             />
           </div>
 

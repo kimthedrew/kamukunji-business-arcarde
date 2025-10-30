@@ -8,7 +8,7 @@ const router = express.Router();
 // Register shop
 router.post('/register', async (req, res) => {
   try {
-    const { shop_number, shop_name, contact, email, password } = req.body;
+    const { shop_number, shop_name, contact, email, password, till_number, payment_provider, payment_notes } = req.body;
 
     // Check if shop number or email already exists
     const { data: existingShop, error: checkError } = await supabase
@@ -38,6 +38,9 @@ router.post('/register', async (req, res) => {
         contact,
         email,
         password: hashedPassword,
+        till_number: till_number || null,
+        payment_provider: payment_provider || null,
+        payment_notes: payment_notes || null,
         status: 'pending'
       })
       .select()

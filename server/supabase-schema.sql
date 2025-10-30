@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS shops (
   contact TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
+  till_number TEXT,
+  payment_provider TEXT,
+  payment_notes TEXT,
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -55,6 +58,10 @@ CREATE TABLE IF NOT EXISTS orders (
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   size TEXT NOT NULL,
   status TEXT DEFAULT 'pending',
+  payment_reference TEXT,
+  payment_status TEXT DEFAULT 'unpaid',
+  paid_at TIMESTAMP WITH TIME ZONE,
+  confirmed_by INTEGER,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
