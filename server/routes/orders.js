@@ -77,7 +77,9 @@ router.get('/my-orders', authenticateToken, async (req, res) => {
       status: order.status,
       notes: order.notes,
       created_at: order.created_at,
-      shop_name: order.shops.shop_name
+      shop_name: order.shops.shop_name,
+      payment_reference: order.payment_reference || null,
+      payment_status: order.payment_status || 'unpaid'
     }));
 
     res.json(transformedOrders);

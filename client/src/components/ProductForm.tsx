@@ -220,9 +220,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 className="form-input"
               >
                 <option value="shoes">Shoes</option>
+                <option value="official">Official Shoes</option>
+                <option value="casual">Casual</option>
                 <option value="sneakers">Sneakers</option>
                 <option value="boots">Boots</option>
                 <option value="sandals">Sandals</option>
+                <option value="others">Others</option>
               </select>
             </div>
           </div>

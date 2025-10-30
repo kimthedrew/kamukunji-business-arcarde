@@ -94,9 +94,12 @@ const Search: React.FC = () => {
             >
               <option value="">All Categories</option>
               <option value="shoes">Shoes</option>
+              <option value="official">Official Shoes</option>
+              <option value="casual">Casual</option>
               <option value="sneakers">Sneakers</option>
               <option value="boots">Boots</option>
               <option value="sandals">Sandals</option>
+              <option value="others">Others</option>
             </select>
           </div>
           
