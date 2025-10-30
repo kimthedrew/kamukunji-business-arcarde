@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/axiosConfig';
 import ProductCard from '../components/ProductCard';
+import OrderModal from '../components/OrderModal';
 import './ShopProducts.css';
 
 const ShopProducts = () => {
@@ -11,6 +12,8 @@ const ShopProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
 
   const fetchShopProducts = async () => {
     try {
@@ -75,7 +78,14 @@ const ShopProducts = () => {
         {products.length > 0 ? (
           <div className="products-grid">
             {products.map(product => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onOrder={() => {
+                  setSelectedProduct(product);
+                  setShowOrderModal(true);
+                }}
+              />
             ))}
           </div>
         ) : (
@@ -84,6 +94,12 @@ const ShopProducts = () => {
           </div>
         )}
       </div>
+      {showOrderModal && selectedProduct && (
+        <OrderModal 
+          product={selectedProduct} 
+          onClose={() => setShowOrderModal(false)} 
+        />
+      )}
     </div>
   );
 };
