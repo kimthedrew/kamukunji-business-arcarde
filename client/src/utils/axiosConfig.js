@@ -18,7 +18,8 @@ api.interceptors.request.use(
     const url = typeof config.url === 'string' ? config.url : '';
     const isAdminEndpoint = url.startsWith('/admin');
 
-    const tokenToUse = isAdminEndpoint ? adminToken : (adminToken || shopToken);
+    // Use adminToken ONLY for admin endpoints; otherwise use shopToken ONLY
+    const tokenToUse = isAdminEndpoint ? adminToken : shopToken;
 
     if (tokenToUse) {
       config.headers.Authorization = `Bearer ${tokenToUse}`;
