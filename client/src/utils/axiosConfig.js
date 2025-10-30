@@ -11,9 +11,17 @@ const api = axios.create({
 // Request interceptor - add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Prefer admin token for admin endpoints; otherwise use shop token
+    const adminToken = localStorage.getItem('adminToken');
+    const shopToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    const url = typeof config.url === 'string' ? config.url : '';
+    const isAdminEndpoint = url.startsWith('/admin');
+
+    const tokenToUse = isAdminEndpoint ? adminToken : (adminToken || shopToken);
+
+    if (tokenToUse) {
+      config.headers.Authorization = `Bearer ${tokenToUse}`;
     }
     return config;
   },
