@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import ProductForm from '../components/ProductForm';
 import ProductList from '../components/ProductList';
 import OrdersList from '../components/OrdersList';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import ShopInfoModal from '../components/ShopInfoModal';
 import NotificationBanner from '../components/NotificationBanner';
 import notificationService from '../services/notificationService';
 import './ShopDashboard.css';
@@ -16,6 +17,9 @@ interface Shop {
   contact: string;
   email: string;
   status: string;
+  till_number?: string;
+  payment_provider?: string;
+  payment_notes?: string;
 }
 
 interface Product {
@@ -51,6 +55,7 @@ const ShopDashboard: React.FC = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showShopInfo, setShowShopInfo] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigate = useNavigate();
@@ -77,22 +82,19 @@ const ShopDashboard: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-
       const [productsRes, ordersRes, shopRes] = await Promise.all([
-        axios.get('/api/products/my-products', { headers }),
-        axios.get('/api/orders/my-orders', { headers }),
-        axios.get('/api/shops/profile', { headers })
+        api.get('/products/my-products'),
+        api.get('/orders/my-orders'),
+        api.get('/shops/profile')
       ]);
 
       setProducts(productsRes.data);
       setFilteredProducts(productsRes.data);
       setOrders(ordersRes.data);
       
-      // Update shop data with current status
+      // Update shop data with all fields from profile
       if (shopRes.data) {
-        setShop(prev => prev ? { ...prev, status: shopRes.data.status } : null);
+        setShop(shopRes.data);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -103,13 +105,8 @@ const ShopDashboard: React.FC = () => {
 
   const searchProducts = async (query: string) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(
-        `/api/products/my-products/search?query=${encodeURIComponent(query)}`,
-        { headers }
+      const response = await api.get(
+        `/products/my-products/search?query=${encodeURIComponent(query)}`
       );
       
       setFilteredProducts(response.data);
@@ -156,10 +153,7 @@ const ShopDashboard: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/products/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/products/${productId}`);
       loadData();
     } catch (error) {
       console.error('Failed to delete product:', error);
@@ -168,11 +162,7 @@ const ShopDashboard: React.FC = () => {
 
   const handleUpdateOrderStatus = async (orderId: number, status: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`/api/orders/${orderId}/status`, 
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/orders/${orderId}/status`, { status });
       loadData();
     } catch (error) {
       console.error('Failed to update order status:', error);
@@ -181,11 +171,7 @@ const ShopDashboard: React.FC = () => {
 
   const handleConfirmPayment = async (orderId: number, decision: 'confirmed' | 'rejected') => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`/api/orders/${orderId}/payment`, 
-        { payment_status: decision },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/orders/${orderId}/payment`, { payment_status: decision });
       loadData();
     } catch (error) {
       console.error('Failed to update payment status:', error);
@@ -211,6 +197,12 @@ const ShopDashboard: React.FC = () => {
             <p>Shop {shop?.shop_number} • {shop?.contact}</p>
           </div>
           <div className="header-actions">
+            <button 
+              onClick={() => setShowShopInfo(true)} 
+              className="btn btn-outline"
+            >
+              Update Shop Info
+            </button>
             <button 
               onClick={() => setShowChangePassword(true)} 
               className="btn btn-outline"
@@ -323,6 +315,14 @@ const ShopDashboard: React.FC = () => {
         <ChangePasswordModal
           onClose={() => setShowChangePassword(false)}
           userType="shop"
+        />
+      )}
+
+      {showShopInfo && shop && (
+        <ShopInfoModal
+          shop={shop}
+          onClose={() => setShowShopInfo(false)}
+          onUpdate={loadData}
         />
       )}
     </div>

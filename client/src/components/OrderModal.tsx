@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import './OrderModal.css';
 
 interface Product {
@@ -48,7 +48,7 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
     setMessage('');
 
     try {
-      await axios.post('/api/orders', {
+      await api.post('/orders', {
         shop_id: product.shop_id,
         customer_name: formData.customer_name,
         customer_contact: formData.customer_contact,

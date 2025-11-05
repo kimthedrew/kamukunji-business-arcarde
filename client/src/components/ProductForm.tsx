@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import { getCloudinaryUrl } from '../config/cloudinary';
 import './ProductForm.css';
 
@@ -86,7 +86,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         try {
           const base64 = e.target?.result as string;
           
-          const response = await axios.post('/api/upload', {
+          const response = await api.post('/upload', {
             image: base64
           });
           
@@ -158,9 +158,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-
       const productData = {
         ...formData,
         price: parseFloat(formData.price),
@@ -170,9 +167,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
       console.log('Submitting product data:', productData);
 
       if (product) {
-        await axios.put(`/api/products/${product.id}`, productData, { headers });
+        await api.put(`/products/${product.id}`, productData);
       } else {
-        await axios.post('/api/products', productData, { headers });
+        await api.post('/products', productData);
       }
 
       onSave();

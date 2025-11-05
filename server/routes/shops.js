@@ -155,7 +155,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const { data: shop, error } = await supabase
       .from('shops')
-      .select('id, shop_number, shop_name, contact, email, status')
+      .select('id, shop_number, shop_name, contact, email, status, till_number, payment_provider, payment_notes')
       .eq('id', req.user.shop_id)
       .single();
 

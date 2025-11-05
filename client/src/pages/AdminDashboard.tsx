@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import ShopList from '../components/ShopList';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import './AdminDashboard.css';
@@ -67,14 +67,12 @@ const AdminDashboard: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      console.log('Loading admin data with token:', token ? 'present' : 'missing');
+      const adminToken = localStorage.getItem('adminToken');
+      console.log('Loading admin data with token:', adminToken ? 'present' : 'missing');
 
       const [shopsRes, statsRes] = await Promise.all([
-        axios.get('/api/admin/shops', { headers }),
-        axios.get('/api/admin/stats', { headers })
+        api.get('/admin/shops'),
+        api.get('/admin/stats')
       ]);
 
       console.log('Shops response:', shopsRes.data);
@@ -103,11 +101,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleShopStatusUpdate = async (shopId: number, status: string) => {
     try {
-      const token = localStorage.getItem('adminToken');
-      await axios.put(`/api/admin/shops/${shopId}/status`, 
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/admin/shops/${shopId}/status`, { status });
       loadData();
     } catch (error) {
       console.error('Failed to update shop status:', error);
@@ -116,10 +110,8 @@ const AdminDashboard: React.FC = () => {
 
   const handleSubscriptionUpdate = async (shopId: number, plan: string, monthlyFee: number) => {
     try {
-      const token = localStorage.getItem('adminToken');
-      await axios.put(`/api/admin/shops/${shopId}/subscription`, 
-        { plan, monthly_fee: monthlyFee, status: 'active' },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.put(`/admin/shops/${shopId}/subscription`, 
+        { plan, monthly_fee: monthlyFee, status: 'active' }
       );
       loadData();
     } catch (error) {

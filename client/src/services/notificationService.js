@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 
 class NotificationService {
   constructor() {
@@ -32,24 +32,35 @@ class NotificationService {
       await navigator.serviceWorker.ready;
 
       // Get VAPID key from server
-      const response = await axios.get('/api/notifications/vapid-key');
+      const response = await api.get('/notifications/vapid-key');
       const publicKey = response.data.publicKey;
+
+      // Convert VAPID key to Uint8Array
+      const urlBase64ToUint8Array = (base64String) => {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+          .replace(/\-/g, '+')
+          .replace(/_/g, '/');
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      };
 
       // Subscribe to push notifications
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: publicKey
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
       });
 
       // Send subscription to server
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post('/api/notifications/subscribe', {
-          subscription
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      await api.post('/notifications/subscribe', {
+        subscription
+      });
 
       return true;
     } catch (error) {
