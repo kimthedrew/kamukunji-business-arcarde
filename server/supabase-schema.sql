@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS shops (
   payment_provider TEXT,
   payment_notes TEXT,
   status TEXT DEFAULT 'pending',
+  pos_enabled BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS orders (
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   size TEXT NOT NULL,
   status TEXT DEFAULT 'pending',
+  source TEXT DEFAULT 'online',
   payment_reference TEXT,
   payment_status TEXT DEFAULT 'unpaid',
   paid_at TIMESTAMP WITH TIME ZONE,

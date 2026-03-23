@@ -12,6 +12,7 @@ interface Order {
   created_at: string;
   payment_reference?: string;
   payment_status?: string;
+  source?: string;
 }
 
 interface OrdersListProps {
@@ -64,7 +65,12 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onUpdateStatus, onConfi
           <div key={order.id} className="order-card">
             <div className="order-header">
               <div className="order-info">
-                <h3 className="customer-name">{order.customer_name}</h3>
+                <div className="customer-name-row">
+                  <h3 className="customer-name">{order.customer_name}</h3>
+                  {order.source === 'pos' && (
+                    <span className="pos-badge">POS</span>
+                  )}
+                </div>
                 <p className="order-date">{formatDate(order.created_at)}</p>
               </div>
               <div className={`status-badge ${getStatusColor(order.status)}`}>
@@ -99,34 +105,36 @@ const OrdersList: React.FC<OrdersListProps> = ({ orders, onUpdateStatus, onConfi
               )}
             </div>
 
-            <div className="order-actions">
-              <select
-                value={order.status}
-                onChange={(e) => onUpdateStatus(order.id, e.target.value)}
-                className="status-select"
-              >
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              {order.payment_reference && onConfirmPayment && (
-                <>
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={() => onConfirmPayment(order.id, 'confirmed')}
-                  >
-                    Confirm Payment
-                  </button>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => onConfirmPayment(order.id, 'rejected')}
-                  >
-                    Reject
-                  </button>
-                </>
-              )}
-            </div>
+            {order.source !== 'pos' && (
+              <div className="order-actions">
+                <select
+                  value={order.status}
+                  onChange={(e) => onUpdateStatus(order.id, e.target.value)}
+                  className="status-select"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                {order.payment_reference && onConfirmPayment && (
+                  <>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => onConfirmPayment(order.id, 'confirmed')}
+                    >
+                      Confirm Payment
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => onConfirmPayment(order.id, 'rejected')}
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

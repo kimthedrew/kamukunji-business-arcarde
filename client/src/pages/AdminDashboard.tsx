@@ -16,6 +16,7 @@ interface Shop {
   plan?: string;
   subscription_status?: string;
   monthly_fee?: number;
+  pos_enabled?: boolean;
 }
 
 interface Stats {
@@ -110,12 +111,21 @@ const AdminDashboard: React.FC = () => {
 
   const handleSubscriptionUpdate = async (shopId: number, plan: string, monthlyFee: number) => {
     try {
-      await api.put(`/admin/shops/${shopId}/subscription`, 
+      await api.put(`/admin/shops/${shopId}/subscription`,
         { plan, monthly_fee: monthlyFee, status: 'active' }
       );
       loadData();
     } catch (error) {
       console.error('Failed to update subscription:', error);
+    }
+  };
+
+  const handlePosToggle = async (shopId: number, enabled: boolean) => {
+    try {
+      await api.put(`/admin/shops/${shopId}/features`, { pos_enabled: enabled });
+      loadData();
+    } catch (error) {
+      console.error('Failed to toggle POS:', error);
     }
   };
 
@@ -238,6 +248,7 @@ const AdminDashboard: React.FC = () => {
               shops={filteredShops}
               onStatusUpdate={handleShopStatusUpdate}
               onSubscriptionUpdate={handleSubscriptionUpdate}
+              onPosToggle={handlePosToggle}
             />
           </div>
         )}

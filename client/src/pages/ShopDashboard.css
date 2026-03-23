@@ -63,6 +63,14 @@
   color: white;
 }
 
+.tab-pos.active {
+  background-color: #7c3aed;
+}
+
+.pos-section {
+  margin-top: 0;
+}
+
 .products-section,
 .orders-section {
   background: white;

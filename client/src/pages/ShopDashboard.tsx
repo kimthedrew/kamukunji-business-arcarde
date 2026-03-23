@@ -4,6 +4,7 @@ import api from '../utils/axiosConfig';
 import ProductForm from '../components/ProductForm';
 import ProductList from '../components/ProductList';
 import OrdersList from '../components/OrdersList';
+import POSScreen from '../components/POSScreen';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ShopInfoModal from '../components/ShopInfoModal';
 import NotificationBanner from '../components/NotificationBanner';
@@ -20,6 +21,7 @@ interface Shop {
   till_number?: string;
   payment_provider?: string;
   payment_notes?: string;
+  pos_enabled?: boolean;
 }
 
 interface Product {
@@ -233,18 +235,26 @@ const ShopDashboard: React.FC = () => {
         )}
 
         <div className="dashboard-tabs">
-          <button 
+          <button
             className={`tab ${activeTab === 'products' ? 'active' : ''}`}
             onClick={() => setActiveTab('products')}
           >
             Products ({products.length})
           </button>
-          <button 
+          <button
             className={`tab ${activeTab === 'orders' ? 'active' : ''}`}
             onClick={() => setActiveTab('orders')}
           >
             Orders ({orders.length})
           </button>
+          {shop?.pos_enabled && (
+            <button
+              className={`tab tab-pos ${activeTab === 'pos' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pos')}
+            >
+              POS
+            </button>
+          )}
         </div>
 
         {activeTab === 'products' && (
@@ -306,6 +316,19 @@ const ShopDashboard: React.FC = () => {
               orders={orders}
               onUpdateStatus={handleUpdateOrderStatus}
               onConfirmPayment={handleConfirmPayment}
+            />
+          </div>
+        )}
+
+        {activeTab === 'pos' && shop?.pos_enabled && (
+          <div className="pos-section">
+            <div className="section-header">
+              <h2>Point of Sale</h2>
+            </div>
+            <POSScreen
+              products={products}
+              shop={shop}
+              onSaleComplete={loadData}
             />
           </div>
         )}

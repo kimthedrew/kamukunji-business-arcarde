@@ -59,6 +59,7 @@ router.get('/shops', authenticateToken, async (req, res) => {
         shop_subscriptions(plan, status, monthly_fee)
       `)
       .order('created_at', { ascending: false });
+
     
     if (error) {
       console.error('Database error:', error);
@@ -105,6 +106,29 @@ router.put('/shops/:id/status', authenticateToken, async (req, res) => {
     res.json({ message: 'Shop status updated successfully' });
   } catch (error) {
     console.error('Shop status update error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+// Toggle shop features (POS, etc.)
+router.put('/shops/:id/features', authenticateToken, async (req, res) => {
+  try {
+    const { pos_enabled } = req.body;
+    const shopId = req.params.id;
+
+    const { error } = await supabase
+      .from('shops')
+      .update({ pos_enabled })
+      .eq('id', shopId);
+
+    if (error) {
+      console.error('Shop features update error:', error);
+      return res.status(500).json({ message: 'Database error' });
+    }
+
+    res.json({ message: 'Shop features updated successfully' });
+  } catch (error) {
+    console.error('Shop features update error:', error);
     res.status(500).json({ message: 'Database error' });
   }
 });

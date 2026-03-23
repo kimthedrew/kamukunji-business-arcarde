@@ -12,15 +12,17 @@ interface Shop {
   plan?: string;
   subscription_status?: string;
   monthly_fee?: number;
+  pos_enabled?: boolean;
 }
 
 interface ShopListProps {
   shops: Shop[];
   onStatusUpdate: (shopId: number, status: string) => void;
   onSubscriptionUpdate: (shopId: number, plan: string, monthlyFee: number) => void;
+  onPosToggle: (shopId: number, enabled: boolean) => void;
 }
 
-const ShopList: React.FC<ShopListProps> = ({ shops, onStatusUpdate, onSubscriptionUpdate }) => {
+const ShopList: React.FC<ShopListProps> = ({ shops, onStatusUpdate, onSubscriptionUpdate, onPosToggle }) => {
   const [editingShop, setEditingShop] = useState<number | null>(null);
   const [subscriptionData, setSubscriptionData] = useState({
     plan: 'free',
@@ -130,6 +132,18 @@ const ShopList: React.FC<ShopListProps> = ({ shops, onStatusUpdate, onSubscripti
                   <option value="suspended">Suspended</option>
                   <option value="closed">Closed</option>
                 </select>
+              </div>
+
+              <div className="features-controls">
+                <div className="feature-row">
+                  <span className="feature-label">POS</span>
+                  <button
+                    onClick={() => onPosToggle(shop.id, !shop.pos_enabled)}
+                    className={`feature-toggle-btn ${shop.pos_enabled ? 'enabled' : ''}`}
+                  >
+                    {shop.pos_enabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
               </div>
 
               <div className="subscription-controls">
