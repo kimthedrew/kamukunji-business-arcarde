@@ -12,6 +12,8 @@ interface ShopInfoModalProps {
     till_number?: string;
     payment_provider?: string;
     payment_notes?: string;
+    banner_url?: string;
+    business_hours?: string;
   } | null;
   onClose: () => void;
   onUpdate: () => void;
@@ -24,7 +26,9 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
     email: '',
     till_number: '',
     payment_provider: '',
-    payment_notes: ''
+    payment_notes: '',
+    banner_url: '',
+    business_hours: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,16 +42,15 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
         email: shop.email || '',
         till_number: shop.till_number || '',
         payment_provider: shop.payment_provider || '',
-        payment_notes: shop.payment_notes || ''
+        payment_notes: shop.payment_notes || '',
+        banner_url: shop.banner_url || '',
+        business_hours: shop.business_hours || ''
       });
     }
   }, [shop]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,17 +84,8 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
         </div>
 
         <form onSubmit={handleSubmit} className="shop-info-form">
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="alert alert-success">
-              {success}
-            </div>
-          )}
+          {error && <div className="alert alert-error">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
 
           <div className="form-group">
             <label className="form-label">Shop Number</label>
@@ -118,7 +112,6 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
                 required
               />
             </div>
-
             <div className="form-group">
               <label className="form-label">Contact Number *</label>
               <input
@@ -146,9 +139,11 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
             />
           </div>
 
+          <div className="form-section-label">Payment Info</div>
+
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Till Number (Optional)</label>
+              <label className="form-label">Till Number</label>
               <input
                 type="text"
                 name="till_number"
@@ -158,9 +153,8 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
                 placeholder="e.g., 123456"
               />
             </div>
-
             <div className="form-group">
-              <label className="form-label">Payment Provider (Optional)</label>
+              <label className="form-label">Payment Provider</label>
               <input
                 type="text"
                 name="payment_provider"
@@ -173,7 +167,7 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
           </div>
 
           <div className="form-group">
-            <label className="form-label">Payment Notes (Optional)</label>
+            <label className="form-label">Payment Notes</label>
             <input
               type="text"
               name="payment_notes"
@@ -184,15 +178,45 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
             />
           </div>
 
+          <div className="form-section-label">Branding</div>
+
+          <div className="form-group">
+            <label className="form-label">Banner Image URL</label>
+            <input
+              type="url"
+              name="banner_url"
+              value={formData.banner_url}
+              onChange={handleChange}
+              className="form-input"
+              placeholder="https://... (paste a Cloudinary or image URL)"
+            />
+            {formData.banner_url && (
+              <img
+                src={formData.banner_url}
+                alt="Banner preview"
+                className="banner-preview"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Business Hours</label>
+            <textarea
+              name="business_hours"
+              value={formData.business_hours}
+              onChange={handleChange}
+              className="form-input"
+              rows={3}
+              placeholder="e.g., Mon–Sat 8am–6pm, Sun Closed"
+            />
+          </div>
+
           <div className="form-actions">
             <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
             </button>
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={loading}
-            >
+            <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'Updating...' : 'Update Information'}
             </button>
           </div>
@@ -203,4 +227,3 @@ const ShopInfoModal: React.FC<ShopInfoModalProps> = ({ shop, onClose, onUpdate }
 };
 
 export default ShopInfoModal;
-

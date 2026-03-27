@@ -16,7 +16,10 @@ interface Shop {
   plan?: string;
   subscription_status?: string;
   monthly_fee?: number;
+  subscription_end_date?: string;
   pos_enabled?: boolean;
+  credit_enabled?: boolean;
+  is_featured?: boolean;
 }
 
 interface Stats {
@@ -24,6 +27,7 @@ interface Stats {
   activeShops: number;
   totalProducts: number;
   totalOrders: number;
+  featuredShops?: number;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -43,42 +47,29 @@ const AdminDashboard: React.FC = () => {
       navigate('/admin/login');
       return;
     }
-
     loadData();
   }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter shops based on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredShops(shops);
     } else {
-      const filtered = shops.filter(shop =>
-        shop.shop_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        shop.shop_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        shop.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        shop.email.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredShops(filtered);
+      const q = searchQuery.toLowerCase();
+      setFilteredShops(shops.filter(shop =>
+        shop.shop_name.toLowerCase().includes(q) ||
+        shop.shop_number.toLowerCase().includes(q) ||
+        shop.contact.toLowerCase().includes(q) ||
+        shop.email.toLowerCase().includes(q)
+      ));
     }
   }, [searchQuery, shops]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
   const loadData = async () => {
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      console.log('Loading admin data with token:', adminToken ? 'present' : 'missing');
-
       const [shopsRes, statsRes] = await Promise.all([
         api.get('/admin/shops'),
         api.get('/admin/stats')
       ]);
-
-      console.log('Shops response:', shopsRes.data);
-      console.log('Stats response:', statsRes.data);
-
       setShops(shopsRes.data);
       setFilteredShops(shopsRes.data);
       setStats(statsRes.data);
@@ -109,23 +100,26 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleSubscriptionUpdate = async (shopId: number, plan: string, monthlyFee: number) => {
+  const handleSubscriptionUpdate = async (shopId: number, plan: string, monthlyFee: number, endDate: string) => {
     try {
-      await api.put(`/admin/shops/${shopId}/subscription`,
-        { plan, monthly_fee: monthlyFee, status: 'active' }
-      );
+      await api.put(`/admin/shops/${shopId}/subscription`, {
+        plan,
+        monthly_fee: monthlyFee,
+        status: 'active',
+        end_date: endDate || null
+      });
       loadData();
     } catch (error) {
       console.error('Failed to update subscription:', error);
     }
   };
 
-  const handlePosToggle = async (shopId: number, enabled: boolean) => {
+  const handleFeaturesUpdate = async (shopId: number, features: { pos_enabled?: boolean; credit_enabled?: boolean; is_featured?: boolean }) => {
     try {
-      await api.put(`/admin/shops/${shopId}/features`, { pos_enabled: enabled });
+      await api.put(`/admin/shops/${shopId}/features`, features);
       loadData();
     } catch (error) {
-      console.error('Failed to toggle POS:', error);
+      console.error('Failed to update features:', error);
     }
   };
 
@@ -148,10 +142,7 @@ const AdminDashboard: React.FC = () => {
             <p>Manage Kamukunji Business Arcade</p>
           </div>
           <div className="header-actions">
-            <button 
-              onClick={() => setShowChangePassword(true)} 
-              className="btn btn-outline"
-            >
+            <button onClick={() => setShowChangePassword(true)} className="btn btn-outline">
               Change Password
             </button>
             <button onClick={handleLogout} className="btn btn-secondary">
@@ -161,16 +152,10 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="dashboard-tabs">
-          <button 
-            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
+          <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
             Overview
           </button>
-          <button 
-            className={`tab ${activeTab === 'shops' ? 'active' : ''}`}
-            onClick={() => setActiveTab('shops')}
-          >
+          <button className={`tab ${activeTab === 'shops' ? 'active' : ''}`} onClick={() => setActiveTab('shops')}>
             Shops ({shops.length})
           </button>
         </div>
@@ -206,6 +191,15 @@ const AdminDashboard: React.FC = () => {
                   <p>Total Orders</p>
                 </div>
               </div>
+              {stats?.featuredShops !== undefined && (
+                <div className="stat-card">
+                  <div className="stat-icon">⭐</div>
+                  <div className="stat-content">
+                    <h3>{stats.featuredShops}</h3>
+                    <p>Featured Shops</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -214,7 +208,7 @@ const AdminDashboard: React.FC = () => {
           <div className="shops-section">
             <div className="section-header">
               <h2>Shop Management</h2>
-              <p>Manage shop registrations and subscriptions</p>
+              <p>Manage shop registrations, subscriptions, and features</p>
             </div>
 
             <div className="search-section">
@@ -223,24 +217,16 @@ const AdminDashboard: React.FC = () => {
                   type="text"
                   placeholder="Search shops by name, number, contact, or email..."
                   value={searchQuery}
-                  onChange={handleSearchChange}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="search-input"
                 />
                 <div className="search-icon">🔍</div>
                 {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="clear-search-btn"
-                    title="Clear search"
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setSearchQuery('')} className="clear-search-btn" title="Clear search">✕</button>
                 )}
               </div>
               {searchQuery && (
-                <p className="search-results">
-                  Showing {filteredShops.length} of {shops.length} shops
-                </p>
+                <p className="search-results">Showing {filteredShops.length} of {shops.length} shops</p>
               )}
             </div>
 
@@ -248,17 +234,14 @@ const AdminDashboard: React.FC = () => {
               shops={filteredShops}
               onStatusUpdate={handleShopStatusUpdate}
               onSubscriptionUpdate={handleSubscriptionUpdate}
-              onPosToggle={handlePosToggle}
+              onFeaturesUpdate={handleFeaturesUpdate}
             />
           </div>
         )}
       </div>
 
       {showChangePassword && (
-        <ChangePasswordModal
-          onClose={() => setShowChangePassword(false)}
-          userType="admin"
-        />
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} userType="admin" />
       )}
     </div>
   );

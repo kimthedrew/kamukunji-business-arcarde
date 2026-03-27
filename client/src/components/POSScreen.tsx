@@ -59,7 +59,7 @@ const POSScreen: React.FC<POSScreenProps> = ({ products, shop, onSaleComplete })
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [discount, setDiscount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank_transfer'>('cash');
   const [paymentReference, setPaymentReference] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -138,7 +138,7 @@ const POSScreen: React.FC<POSScreenProps> = ({ products, shop, onSaleComplete })
           quantity: i.quantity
         })),
         payment_method: paymentMethod,
-        payment_reference: paymentMethod === 'mpesa' ? paymentReference : undefined,
+        payment_reference: (paymentMethod === 'mpesa' || paymentMethod === 'bank_transfer') ? paymentReference : undefined,
         customer_name: customerName || undefined,
         customer_phone: customerPhone || undefined,
         discount: discount || 0
@@ -188,7 +188,7 @@ const POSScreen: React.FC<POSScreenProps> = ({ products, shop, onSaleComplete })
       `Subtotal: KSh ${receipt.subtotal.toLocaleString()}`,
       receipt.discount > 0 ? `Discount: -KSh ${receipt.discount.toLocaleString()}` : '',
       `*Total: KSh ${receipt.total.toLocaleString()}*`,
-      `Payment: ${receipt.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}`,
+      `Payment: ${receipt.paymentMethod === 'mpesa' ? 'M-Pesa' : receipt.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash'}`,
       receipt.paymentReference ? `Ref: ${receipt.paymentReference}` : '',
       '',
       'Thank you for shopping with us!'
@@ -312,12 +312,18 @@ const POSScreen: React.FC<POSScreenProps> = ({ products, shop, onSaleComplete })
               >
                 M-Pesa
               </button>
+              <button
+                className={`payment-btn ${paymentMethod === 'bank_transfer' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('bank_transfer')}
+              >
+                Bank
+              </button>
             </div>
 
-            {paymentMethod === 'mpesa' && (
+            {(paymentMethod === 'mpesa' || paymentMethod === 'bank_transfer') && (
               <input
                 type="text"
-                placeholder="M-Pesa reference (optional)"
+                placeholder={paymentMethod === 'mpesa' ? 'M-Pesa reference (optional)' : 'Bank reference / slip no. (optional)'}
                 value={paymentReference}
                 onChange={e => setPaymentReference(e.target.value)}
                 className="form-input pos-ref-input"
@@ -429,7 +435,7 @@ const POSScreen: React.FC<POSScreenProps> = ({ products, shop, onSaleComplete })
               </div>
               <div className="receipt-row">
                 <span>Payment</span>
-                <span>{receipt.paymentMethod === 'mpesa' ? 'M-Pesa' : 'Cash'}</span>
+                <span>{receipt.paymentMethod === 'mpesa' ? 'M-Pesa' : receipt.paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash'}</span>
               </div>
               {receipt.paymentReference && (
                 <div className="receipt-row">

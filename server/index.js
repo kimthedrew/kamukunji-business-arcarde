@@ -11,6 +11,9 @@ const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
 const { router: notificationRoutes, sendNotificationToShop } = require('./routes/notifications');
 const posRoutes = require('./routes/pos');
+const analyticsRoutes = require('./routes/analytics');
+const creditsRoutes = require('./routes/credits');
+const staffRoutes = require('./routes/staff');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -166,6 +169,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/pos', posRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/credits', creditsRoutes);
+app.use('/api/staff', staffRoutes);
 
 // Cloudinary upload route
 app.post('/api/upload', async (req, res) => {

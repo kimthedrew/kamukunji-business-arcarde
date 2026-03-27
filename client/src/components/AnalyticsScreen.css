@@ -1,0 +1,302 @@
+.analytics-screen {
+  padding: 16px 0;
+}
+
+.analytics-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.atab {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.atab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.period-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.period-btn {
+  padding: 6px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.period-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.analytics-loading,
+.analytics-empty {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.analytics-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* Revenue */
+.revenue-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.rev-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.rev-card-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rev-card-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.revenue-chart {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.chart-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+}
+
+.bar-wrap {
+  display: flex;
+  align-items: flex-end;
+  height: 160px;
+}
+
+.bar {
+  width: 36px;
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+  cursor: help;
+}
+
+.bar-label {
+  font-size: 0.65rem;
+  color: #9ca3af;
+  margin: 4px 0 0;
+  text-align: center;
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-value {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin: 0;
+  text-align: center;
+}
+
+/* Bestsellers */
+.bs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.bs-rank {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #9ca3af;
+  min-width: 28px;
+}
+
+.bs-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.bs-info {
+  flex: 1;
+}
+
+.bs-name {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 2px;
+  font-size: 0.9rem;
+}
+
+.bs-meta {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.bs-stats {
+  text-align: right;
+}
+
+.bs-units {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 2px;
+}
+
+.bs-revenue {
+  font-size: 0.75rem;
+  color: #10b981;
+  margin: 0;
+}
+
+/* Low Stock */
+.lowstock-note {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0 0 12px;
+}
+
+.ls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.ls-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.ls-name {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.ls-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ls-size-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.ls-size-badge.out {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ls-size-badge.critical {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ls-size-badge.low {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+@media (max-width: 640px) {
+  .revenue-summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .rev-card-value {
+    font-size: 1.1rem;
+  }
+}

@@ -16,6 +16,11 @@ db.serialize(() => {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
+      pos_enabled BOOLEAN DEFAULT 0,
+      banner_url TEXT,
+      business_hours TEXT,
+      is_featured BOOLEAN DEFAULT 0,
+      credit_enabled BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -67,6 +72,12 @@ db.serialize(() => {
       product_id INTEGER NOT NULL,
       size TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
+      source TEXT DEFAULT 'online',
+      payment_status TEXT DEFAULT 'unpaid',
+      payment_reference TEXT,
+      paid_at DATETIME,
+      confirmed_by INTEGER,
+      sale_amount DECIMAL(10,2),
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (shop_id) REFERENCES shops (id),
@@ -84,6 +95,54 @@ db.serialize(() => {
       start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
       end_date DATETIME,
       monthly_fee DECIMAL(10,2) DEFAULT 0,
+      FOREIGN KEY (shop_id) REFERENCES shops (id)
+    )
+  `);
+
+  // Credit sales table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS credit_sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shop_id INTEGER NOT NULL,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT,
+      items TEXT NOT NULL DEFAULT '[]',
+      total DECIMAL(10,2) NOT NULL,
+      amount_paid DECIMAL(10,2) DEFAULT 0,
+      balance DECIMAL(10,2) NOT NULL,
+      status TEXT DEFAULT 'outstanding',
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (shop_id) REFERENCES shops (id)
+    )
+  `);
+
+  // Credit payments table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS credit_payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      credit_sale_id INTEGER NOT NULL,
+      amount DECIMAL(10,2) NOT NULL,
+      payment_method TEXT DEFAULT 'cash',
+      payment_reference TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (credit_sale_id) REFERENCES credit_sales (id)
+    )
+  `);
+
+  // Shop staff table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS shop_staff (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shop_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'attendant',
+      is_active BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (shop_id) REFERENCES shops (id)
     )
   `);

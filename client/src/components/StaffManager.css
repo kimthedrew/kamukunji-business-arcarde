@@ -1,0 +1,120 @@
+.staff-manager { padding: 16px 0; }
+
+.staff-loading,
+.staff-empty {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.staff-empty-hint {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin-top: 8px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.staff-plan-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.spb-title {
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0 0 2px;
+}
+
+.spb-desc {
+  font-size: 0.82rem;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.staff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.staff-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.staff-card.inactive { opacity: 0.6; }
+
+.staff-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.staff-info { flex: 1; }
+
+.staff-name { font-weight: 600; color: #111827; margin: 0 0 2px; font-size: 0.95rem; }
+.staff-email { font-size: 0.78rem; color: #6b7280; margin: 0 0 4px; }
+.staff-meta { margin: 0; display: flex; gap: 6px; align-items: center; }
+
+.role-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.role-badge.attendant { background: #f3f4f6; color: #374151; }
+.role-badge.manager { background: #dbeafe; color: #1e40af; }
+
+.inactive-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.staff-actions { display: flex; gap: 8px; }
+
+.staff-login-info {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 20px;
+}
+
+.sli-title { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px; }
+.sli-desc { font-size: 0.82rem; color: #6b7280; margin: 0; line-height: 1.5; }
+
+.staff-form .form-group { margin-bottom: 14px; }
+
+@media (max-width: 640px) {
+  .staff-card { flex-wrap: wrap; }
+  .staff-actions { width: 100%; }
+  .staff-plan-banner { flex-direction: column; gap: 12px; align-items: flex-start; }
+}

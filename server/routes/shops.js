@@ -50,13 +50,14 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get all shops (public) - only active shops
+// Get all shops (public) - active shops, featured first
 router.get('/', async (req, res) => {
   try {
     const { data: shops, error } = await supabase
       .from('shops')
-      .select('id, shop_number, shop_name, contact, email, status')
+      .select('id, shop_number, shop_name, contact, email, status, is_featured, banner_url, business_hours')
       .eq('status', 'active')
+      .order('is_featured', { ascending: false })
       .order('shop_number');
 
     if (error) {
@@ -95,11 +96,10 @@ router.get('/admin/all', authenticateToken, async (req, res) => {
 router.get('/:id/products', async (req, res) => {
   try {
     const shopId = req.params.id;
-    
-    // First verify the shop exists and is active
+
     const { data: shop, error: shopError } = await supabase
       .from('shops')
-      .select('id, shop_number, shop_name, contact, status, till_number, payment_provider, payment_notes')
+      .select('id, shop_number, shop_name, contact, status, till_number, payment_provider, payment_notes, banner_url, business_hours, is_featured')
       .eq('id', shopId)
       .eq('status', 'active')
       .single();
@@ -108,13 +108,9 @@ router.get('/:id/products', async (req, res) => {
       return res.status(404).json({ message: 'Shop not found or not active' });
     }
 
-    // Get products from this shop
     const { data: products, error: productError } = await supabase
       .from('products')
-      .select(`
-        *,
-        product_sizes(size, in_stock, quantity)
-      `)
+      .select('*, product_sizes(size, in_stock, quantity)')
       .eq('shop_id', shopId)
       .order('created_at', { ascending: false });
 
@@ -123,7 +119,6 @@ router.get('/:id/products', async (req, res) => {
       return res.status(500).json({ message: 'Database error' });
     }
 
-    // Transform the data
     const transformedProducts = products.map(product => ({
       ...product,
       shop_number: shop.shop_number,
@@ -140,7 +135,10 @@ router.get('/:id/products', async (req, res) => {
         id: shop.id,
         shop_number: shop.shop_number,
         shop_name: shop.shop_name,
-        contact: shop.contact
+        contact: shop.contact,
+        banner_url: shop.banner_url || null,
+        business_hours: shop.business_hours || null,
+        is_featured: shop.is_featured || false
       },
       products: transformedProducts
     });
@@ -150,12 +148,12 @@ router.get('/:id/products', async (req, res) => {
   }
 });
 
-// Get shop profile (authenticated)
+// Get shop profile (authenticated) — includes subscription plan
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const { data: shop, error } = await supabase
       .from('shops')
-      .select('id, shop_number, shop_name, contact, email, status, till_number, payment_provider, payment_notes, pos_enabled')
+      .select('id, shop_number, shop_name, contact, email, status, till_number, payment_provider, payment_notes, pos_enabled, banner_url, business_hours, is_featured, credit_enabled')
       .eq('id', req.user.shop_id)
       .single();
 
@@ -163,7 +161,22 @@ router.get('/profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Shop not found' });
     }
 
-    res.json(shop);
+    // Get subscription plan
+    const { data: subscription } = await supabase
+      .from('shop_subscriptions')
+      .select('plan, status, end_date')
+      .eq('shop_id', req.user.shop_id)
+      .single();
+
+    const now = new Date();
+    const isExpired = subscription?.end_date && new Date(subscription.end_date) < now;
+
+    res.json({
+      ...shop,
+      plan: subscription?.plan || 'free',
+      subscription_status: isExpired ? 'expired' : (subscription?.status || 'active'),
+      subscription_end_date: subscription?.end_date || null
+    });
   } catch (error) {
     console.error('Profile fetch error:', error);
     res.status(500).json({ message: 'Database error' });
@@ -173,17 +186,19 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // Update shop profile (authenticated)
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const { shop_name, contact, email, till_number, payment_provider, payment_notes } = req.body;
-    
+    const { shop_name, contact, email, till_number, payment_provider, payment_notes, banner_url, business_hours } = req.body;
+
     const { error } = await supabase
       .from('shops')
-      .update({ 
-        shop_name, 
-        contact, 
+      .update({
+        shop_name,
+        contact,
         email,
         till_number: till_number ?? null,
         payment_provider: payment_provider ?? null,
-        payment_notes: payment_notes ?? null
+        payment_notes: payment_notes ?? null,
+        banner_url: banner_url ?? null,
+        business_hours: business_hours ?? null
       })
       .eq('id', req.user.shop_id);
 
@@ -199,13 +214,45 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Get shop catalog (authenticated) — for WhatsApp sharing
+router.get('/catalog', authenticateToken, async (req, res) => {
+  try {
+    const shopId = req.user.shop_id;
+
+    const { data: shop, error: shopError } = await supabase
+      .from('shops')
+      .select('id, shop_number, shop_name, contact, email, till_number, payment_provider, payment_notes, banner_url, business_hours')
+      .eq('id', shopId)
+      .single();
+
+    if (shopError || !shop) {
+      return res.status(404).json({ message: 'Shop not found' });
+    }
+
+    const { data: products, error: productError } = await supabase
+      .from('products')
+      .select('id, name, description, price, image_url, category, product_sizes(size, in_stock, quantity)')
+      .eq('shop_id', shopId)
+      .order('category')
+      .order('name');
+
+    if (productError) {
+      return res.status(500).json({ message: 'Database error' });
+    }
+
+    res.json({ shop, products });
+  } catch (error) {
+    console.error('Catalog fetch error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Change shop password (authenticated)
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const shopId = req.user.shop_id;
 
-    // Get current shop
     const { data: shop, error: fetchError } = await supabase
       .from('shops')
       .select('*')
@@ -216,16 +263,13 @@ router.put('/change-password', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Shop not found' });
     }
 
-    // Verify current password
     const isValidPassword = await bcrypt.compare(currentPassword, shop.password);
     if (!isValidPassword) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
     const { error: updateError } = await supabase
       .from('shops')
       .update({ password: hashedPassword })

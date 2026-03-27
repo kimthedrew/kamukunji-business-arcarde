@@ -109,46 +109,75 @@ router.get('/my-products', authenticateToken, async (req, res) => {
   }
 });
 
+const PLAN_PRODUCT_LIMITS = { free: 20, basic: 100, premium: Infinity };
+
 // Add new product (authenticated)
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { name, description, price, image_url, public_id, category, sizes } = req.body;
-    
+    const shopId = req.user.shop_id;
+
     // First, verify the shop exists
     const { data: shop, error: shopError } = await supabase
       .from('shops')
       .select('id, shop_number, status')
-      .eq('id', req.user.shop_id)
+      .eq('id', shopId)
       .single();
-    
+
     if (shopError || !shop) {
-      console.error(`Shop not found: ${req.user.shop_id} (${req.user.shop_number || 'unknown'}) - IP: ${req.ip || 'unknown'}`);
-      return res.status(401).json({ 
+      console.error(`Shop not found: ${shopId} (${req.user.shop_number || 'unknown'}) - IP: ${req.ip || 'unknown'}`);
+      return res.status(401).json({
         message: 'Invalid shop. Please log in again.',
         code: 'INVALID_SHOP',
         details: 'Your session has expired or shop no longer exists'
       });
     }
-    
+
     if (shop.status === 'closed') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Your shop is currently closed. Please contact admin.',
         code: 'SHOP_CLOSED'
       });
     }
-    
+
     if (shop.status === 'pending') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Your shop is pending approval. Please wait for admin approval before adding products.',
         code: 'SHOP_PENDING'
       });
+    }
+
+    // Enforce plan-based product limits
+    const { data: subscription } = await supabase
+      .from('shop_subscriptions')
+      .select('plan')
+      .eq('shop_id', shopId)
+      .single();
+
+    const plan = subscription?.plan || 'free';
+    const limit = PLAN_PRODUCT_LIMITS[plan] ?? 20;
+
+    if (isFinite(limit)) {
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact' })
+        .eq('shop_id', shopId);
+
+      if ((count || 0) >= limit) {
+        return res.status(403).json({
+          message: `Product limit reached. Your ${plan} plan allows ${limit} products. Upgrade to add more.`,
+          code: 'PRODUCT_LIMIT_REACHED',
+          limit,
+          plan
+        });
+      }
     }
     
     // Create the product
     const { data: product, error: productError } = await supabase
       .from('products')
       .insert({
-        shop_id: req.user.shop_id,
+        shop_id: shopId,
         name,
         description,
         price,
