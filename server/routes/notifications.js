@@ -1,46 +1,38 @@
 const express = require('express');
 const webpush = require('web-push');
-const supabase = require('../database-adapter');
+const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// VAPID keys (you should generate these for production)
 const vapidKeys = {
-  publicKey: 'BOh70TBFA1GKcwup_jp4JQs_AfpyECUnT2UMSPXtNTRc4YVbiGh1N8xaHBU7exIjfYsqxw-RfL9rMO2NipxaF2E',
-  privateKey: 'HZZdxoGfRH-S2OjcxOR8Lx_o7mJu45KqGvwuZzddp2Q'
+  publicKey: process.env.VAPID_PUBLIC_KEY,
+  privateKey: process.env.VAPID_PRIVATE_KEY
 };
 
-webpush.setVapidDetails(
-  'mailto:admin@kamukunji.com',
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
+const vapidConfigured = vapidKeys.publicKey && vapidKeys.privateKey &&
+  vapidKeys.publicKey !== 'your_vapid_public_key';
 
-// Subscribe shop to notifications
+if (vapidConfigured) {
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_EMAIL || 'admin@kamukunji.com'}`,
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+  );
+}
+
+// Subscribe shop to push notifications
 router.post('/subscribe', authenticateToken, async (req, res) => {
   try {
     const { subscription } = req.body;
     const shopId = req.user.shop_id;
 
-    // First, delete existing subscription for this shop
-    await supabase
-      .from('shop_subscription_data')
-      .delete()
-      .eq('shop_id', shopId);
-
-    // Insert new subscription
-    const { error } = await supabase
-      .from('shop_subscription_data')
-      .insert({
-        shop_id: shopId,
-        subscription_data: subscription
-      });
-
-    if (error) {
-      console.error('Subscription save error:', error);
-      return res.status(500).json({ message: 'Failed to save subscription' });
-    }
+    await db.query(
+      `INSERT INTO shop_subscription_data (shop_id, subscription_data)
+       VALUES ($1, $2)
+       ON CONFLICT (shop_id) DO UPDATE SET subscription_data = EXCLUDED.subscription_data`,
+      [shopId, JSON.stringify(subscription)]
+    );
 
     res.json({ message: 'Subscription saved successfully' });
   } catch (error) {
@@ -49,42 +41,29 @@ router.post('/subscribe', authenticateToken, async (req, res) => {
   }
 });
 
-// Send notification to shop
+// Internal helper — send notification to a shop
 const sendNotificationToShop = async (shopId, title, body) => {
+  if (!vapidConfigured) return;
   try {
-    const { data, error } = await supabase
-      .from('shop_subscription_data')
-      .select('subscription_data')
-      .eq('shop_id', shopId)
-      .single();
+    const { rows } = await db.query(
+      'SELECT subscription_data FROM shop_subscription_data WHERE shop_id = $1',
+      [shopId]
+    );
+    if (rows.length === 0 || !rows[0].subscription_data) return;
 
-    if (error || !data || !data.subscription_data) {
-      console.error('No subscription found for shop:', shopId);
-      return;
-    }
-
-    const subscription = data.subscription_data;
-    const payload = JSON.stringify({
-      title: title,
-      body: body,
-      icon: '/icon-192x192.png',
-      badge: '/badge-72x72.png'
-    });
-
+    const subscription = rows[0].subscription_data;
+    const payload = JSON.stringify({ title, body, icon: '/icon-192x192.png', badge: '/badge-72x72.png' });
     await webpush.sendNotification(subscription, payload);
-    console.log('Notification sent to shop:', shopId);
   } catch (err) {
-    console.error('Error sending notification:', err);
+    console.error('Error sending notification:', err.message);
   }
 };
 
-// Test endpoint to send notification (for testing purposes)
+// Test notification
 router.post('/test', authenticateToken, async (req, res) => {
   try {
     const { title, body } = req.body;
-    const shopId = req.user.shop_id;
-    
-    await sendNotificationToShop(shopId, title || 'Test Notification', body || 'This is a test notification');
+    await sendNotificationToShop(req.user.shop_id, title || 'Test Notification', body || 'This is a test notification');
     res.json({ message: 'Test notification sent' });
   } catch (error) {
     console.error('Test notification error:', error);
@@ -98,6 +77,3 @@ router.get('/vapid-key', (req, res) => {
 });
 
 module.exports = { router, sendNotificationToShop };
-
-
-

@@ -1,5 +1,5 @@
 const express = require('express');
-const supabase = require('../database-adapter');
+const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -18,49 +18,27 @@ router.get('/revenue', authenticateToken, async (req, res) => {
 
     const now = new Date();
     let startDate;
+    if (period === 'day') { startDate = new Date(now); startDate.setHours(0, 0, 0, 0); }
+    else if (period === 'month') { startDate = new Date(now); startDate.setDate(1); startDate.setHours(0, 0, 0, 0); }
+    else startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-    if (period === 'day') {
-      startDate = new Date(now);
-      startDate.setHours(0, 0, 0, 0);
-    } else if (period === 'month') {
-      startDate = new Date(now);
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
-    } else {
-      startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    }
-
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('sale_amount, paid_at, notes, products(price, name, category)')
-      .eq('shop_id', shopId)
-      .eq('source', 'pos')
-      .eq('payment_status', 'confirmed')
-      .gte('paid_at', startDate.toISOString())
-      .order('paid_at', { ascending: true });
-
-    if (error) {
-      console.error('Revenue analytics error:', error);
-      return res.status(500).json({ message: 'Database error' });
-    }
+    const { rows: orders } = await db.query(
+      `SELECT sale_amount, paid_at, notes FROM orders
+       WHERE shop_id = $1 AND source = 'pos' AND payment_status = 'confirmed' AND paid_at >= $2
+       ORDER BY paid_at ASC`,
+      [shopId, startDate.toISOString()]
+    );
 
     const revenueMap = {};
     let totalRevenue = 0;
-    let totalSales = 0;
 
-    orders.forEach(order => {
-      const amount = parseFloat(order.sale_amount || order.products?.price || 0);
+    orders.forEach(o => {
+      const amount = parseFloat(o.sale_amount || 0);
       totalRevenue += amount;
-      totalSales++;
-
-      const date = new Date(order.paid_at);
-      let key;
-      if (period === 'day') {
-        key = `${String(date.getHours()).padStart(2, '0')}:00`;
-      } else {
-        key = date.toISOString().split('T')[0];
-      }
-
+      const date = new Date(o.paid_at);
+      const key = period === 'day'
+        ? `${String(date.getHours()).padStart(2, '0')}:00`
+        : date.toISOString().split('T')[0];
       if (!revenueMap[key]) revenueMap[key] = { label: key, revenue: 0, sales: 0 };
       revenueMap[key].revenue += amount;
       revenueMap[key].sales++;
@@ -71,8 +49,8 @@ router.get('/revenue', authenticateToken, async (req, res) => {
     res.json({
       period,
       total_revenue: Math.round(totalRevenue),
-      total_sales: totalSales,
-      average_order_value: totalSales > 0 ? Math.round(totalRevenue / totalSales) : 0,
+      total_sales: orders.length,
+      average_order_value: orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0,
       revenue_by_period: revenueByPeriod
     });
   } catch (error) {
@@ -89,44 +67,30 @@ router.get('/bestsellers', authenticateToken, async (req, res) => {
 
     const now = new Date();
     let startDate;
-    if (period === 'day') { startDate = new Date(now); startDate.setHours(0, 0, 0, 0); }
+    if (period === 'day')   { startDate = new Date(now); startDate.setHours(0, 0, 0, 0); }
     else if (period === 'week') startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
     else startDate = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('product_id, size, notes, sale_amount, products(name, price, image_url, category)')
-      .eq('shop_id', shopId)
-      .eq('source', 'pos')
-      .eq('payment_status', 'confirmed')
-      .gte('paid_at', startDate.toISOString());
-
-    if (error) return res.status(500).json({ message: 'Database error' });
+    const { rows: orders } = await db.query(
+      `SELECT o.product_id, o.notes, o.sale_amount, p.name, p.price, p.image_url, p.category
+       FROM orders o
+       JOIN products p ON o.product_id = p.id
+       WHERE o.shop_id = $1 AND o.source = 'pos' AND o.payment_status = 'confirmed' AND o.paid_at >= $2`,
+      [shopId, startDate.toISOString()]
+    );
 
     const productMap = {};
-    orders.forEach(order => {
-      const pid = order.product_id;
-      const qty = extractQuantity(order.notes);
+    orders.forEach(o => {
+      const pid = o.product_id;
+      const qty = extractQuantity(o.notes);
       if (!productMap[pid]) {
-        productMap[pid] = {
-          product_id: pid,
-          name: order.products?.name || 'Unknown',
-          image_url: order.products?.image_url,
-          category: order.products?.category,
-          price: order.products?.price,
-          units_sold: 0,
-          revenue: 0
-        };
+        productMap[pid] = { product_id: pid, name: o.name, image_url: o.image_url, category: o.category, price: o.price, units_sold: 0, revenue: 0 };
       }
       productMap[pid].units_sold += qty;
-      productMap[pid].revenue += parseFloat(order.sale_amount || order.products?.price || 0);
+      productMap[pid].revenue += parseFloat(o.sale_amount || o.price || 0);
     });
 
-    const bestsellers = Object.values(productMap)
-      .sort((a, b) => b.units_sold - a.units_sold)
-      .slice(0, parseInt(limit));
-
-    res.json(bestsellers);
+    res.json(Object.values(productMap).sort((a, b) => b.units_sold - a.units_sold).slice(0, parseInt(limit)));
   } catch (error) {
     console.error('Bestsellers error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -139,21 +103,21 @@ router.get('/lowstock', authenticateToken, async (req, res) => {
     const shopId = req.user.shop_id;
     const threshold = parseInt(req.query.threshold) || 5;
 
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('id, name, image_url, category, price, product_sizes(size, quantity, in_stock)')
-      .eq('shop_id', shopId);
-
-    if (error) return res.status(500).json({ message: 'Database error' });
+    const { rows: products } = await db.query(
+      `SELECT p.id, p.name, p.image_url, p.category, p.price,
+         COALESCE(json_agg(json_build_object('size', ps.size, 'quantity', ps.quantity, 'in_stock', ps.in_stock))
+           FILTER (WHERE ps.id IS NOT NULL), '[]') AS product_sizes
+       FROM products p
+       LEFT JOIN product_sizes ps ON p.id = ps.product_id
+       WHERE p.shop_id = $1
+       GROUP BY p.id`,
+      [shopId]
+    );
 
     const lowStock = [];
-    (products || []).forEach(product => {
-      const lowSizes = (product.product_sizes || []).filter(
-        s => s.in_stock && s.quantity !== null && s.quantity <= threshold
-      );
-      if (lowSizes.length > 0) {
-        lowStock.push({ ...product, low_stock_sizes: lowSizes });
-      }
+    products.forEach(p => {
+      const lowSizes = p.product_sizes.filter(s => s.in_stock && s.quantity !== null && s.quantity <= threshold);
+      if (lowSizes.length > 0) lowStock.push({ ...p, low_stock_sizes: lowSizes });
     });
 
     lowStock.sort((a, b) => {

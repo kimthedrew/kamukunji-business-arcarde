@@ -300,3 +300,24 @@
     font-size: 1.1rem;
   }
 }
+
+.lowstock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.btn-wa-restock {
+  display: inline-block;
+  background: #25d366;
+  color: white;
+  padding: 7px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.btn-wa-restock:hover { background: #1da851; }

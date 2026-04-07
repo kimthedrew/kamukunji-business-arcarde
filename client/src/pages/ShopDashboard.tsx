@@ -12,7 +12,12 @@ import AnalyticsScreen from '../components/AnalyticsScreen';
 import CreditTracker from '../components/CreditTracker';
 import StaffManager from '../components/StaffManager';
 import notificationService from '../services/notificationService';
+import CSVImporter from '../components/CSVImporter';
 import './ShopDashboard.css';
+
+const decodeToken = (token: string) => {
+  try { return JSON.parse(atob(token.split('.')[1])); } catch { return {}; }
+};
 
 interface Shop {
   id: number;
@@ -72,7 +77,10 @@ const ShopDashboard: React.FC = () => {
   const [showShopInfo, setShowShopInfo] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [showCSVImporter, setShowCSVImporter] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
 
   const navigate = useNavigate();
 
@@ -88,6 +96,11 @@ const ShopDashboard: React.FC = () => {
       navigate('/shop/login');
       return;
     }
+    const payload = decodeToken(token);
+    if (payload.role === 'staff') {
+      setIsStaff(true);
+      setActiveTab('pos'); // staff lands on POS by default
+    }
     setShop(JSON.parse(shopData));
     loadData();
     notificationService.enableNotifications().then(enabled => {
@@ -102,9 +115,10 @@ const ShopDashboard: React.FC = () => {
         api.get('/orders/my-orders'),
         api.get('/shops/profile')
       ]);
-      setProducts(productsRes.data);
-      setFilteredProducts(productsRes.data);
-      setOrders(ordersRes.data);
+      const productData = Array.isArray(productsRes.data) ? productsRes.data : [];
+      setProducts(productData);
+      setFilteredProducts(productData);
+      setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
       if (shopRes.data) setShop(shopRes.data);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -173,6 +187,14 @@ const ShopDashboard: React.FC = () => {
     }
   };
 
+  const handleCopyShopLink = () => {
+    const url = `${window.location.origin}/shops/${shop?.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    });
+  };
+
   const handleShareCatalog = async () => {
     setCatalogLoading(true);
     try {
@@ -227,10 +249,17 @@ const ShopDashboard: React.FC = () => {
             </p>
           </div>
           <div className="header-actions">
-            <button onClick={handleShareCatalog} className="btn btn-outline" disabled={catalogLoading}>
-              {catalogLoading ? 'Loading...' : '📲 Share Catalog'}
-            </button>
-            <button onClick={() => setShowShopInfo(true)} className="btn btn-outline">Update Shop Info</button>
+            {!isStaff && (
+              <button onClick={handleCopyShopLink} className="btn btn-outline" title={`${window.location.origin}/shops/${shop?.id}`}>
+                {copiedLink ? '✓ Link Copied!' : '🔗 Copy Shop Link'}
+              </button>
+            )}
+            {!isStaff && (
+              <button onClick={handleShareCatalog} className="btn btn-outline" disabled={catalogLoading}>
+                {catalogLoading ? 'Loading...' : '📲 Share Catalog'}
+              </button>
+            )}
+            {!isStaff && <button onClick={() => setShowShopInfo(true)} className="btn btn-outline">Update Shop Info</button>}
             <button onClick={() => setShowChangePassword(true)} className="btn btn-outline">Change Password</button>
             <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
           </div>
@@ -266,28 +295,32 @@ const ShopDashboard: React.FC = () => {
         )}
 
         <div className="dashboard-tabs">
-          <button className={`tab ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
-            Products ({products.length})
-          </button>
-          <button className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-            Orders ({orders.length})
-          </button>
+          {!isStaff && (
+            <button className={`tab ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
+              Products ({products.length})
+            </button>
+          )}
+          {!isStaff && (
+            <button className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
+              Orders ({orders.length})
+            </button>
+          )}
           {shop?.pos_enabled && (
             <button className={`tab tab-pos ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => setActiveTab('pos')}>
               POS
             </button>
           )}
-          {isBasicOrPremium && (
+          {isBasicOrPremium && !isStaff && (
             <button className={`tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
               Analytics
             </button>
           )}
-          {(isBasicOrPremium && shop?.credit_enabled) && (
+          {(isBasicOrPremium && shop?.credit_enabled && !isStaff) && (
             <button className={`tab ${activeTab === 'credit' ? 'active' : ''}`} onClick={() => setActiveTab('credit')}>
               Credit
             </button>
           )}
-          {isBasicOrPremium && (
+          {isBasicOrPremium && !isStaff && (
             <button className={`tab ${activeTab === 'staff' ? 'active' : ''}`} onClick={() => setActiveTab('staff')}>
               Staff
             </button>
@@ -305,6 +338,14 @@ const ShopDashboard: React.FC = () => {
                     {plan} limit: {productLimit} products
                   </span>
                 )}
+                <button
+                  onClick={() => setShowCSVImporter(true)}
+                  className="btn btn-outline"
+                  disabled={atProductLimit}
+                  title="Import products from CSV"
+                >
+                  Import CSV
+                </button>
                 <button
                   onClick={() => setShowProductForm(true)}
                   className="btn btn-primary"
@@ -416,6 +457,10 @@ const ShopDashboard: React.FC = () => {
 
       {showShopInfo && shop && (
         <ShopInfoModal shop={shop} onClose={() => setShowShopInfo(false)} onUpdate={loadData} />
+      )}
+
+      {showCSVImporter && (
+        <CSVImporter onImportComplete={loadData} onClose={() => setShowCSVImporter(false)} />
       )}
     </div>
   );

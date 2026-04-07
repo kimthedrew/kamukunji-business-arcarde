@@ -454,6 +454,9 @@ const POSScreen: React.FC<POSScreenProps> = ({ products, shop, onSaleComplete })
               >
                 Share via WhatsApp
               </a>
+              <button onClick={() => window.print()} className="btn btn-outline">
+                Print Receipt
+              </button>
               <button onClick={handleReceiptClose} className="btn btn-primary">
                 New Sale
               </button>

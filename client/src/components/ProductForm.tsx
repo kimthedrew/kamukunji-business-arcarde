@@ -174,7 +174,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
 
       onSave();
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to save product');
+      const data = error.response?.data;
+      const code = data?.code;
+      if (code === 'SHOP_PENDING') {
+        setError('Your shop is pending admin approval. You cannot add products until your shop is activated.');
+      } else if (code === 'SHOP_CLOSED') {
+        setError('Your shop is currently closed. Contact the admin to reactivate it.');
+      } else if (code === 'PRODUCT_LIMIT_REACHED') {
+        setError(`You have reached the product limit for your ${data.plan} plan (${data.limit} products). Upgrade your plan to add more.`);
+      } else {
+        setError(data?.message || 'Failed to save product. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -277,6 +287,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                       <input
                         type="file"
                         accept="image/*"
+                        capture="environment"
                         onChange={handleFileSelect}
                         className="file-input"
                         disabled={uploading}

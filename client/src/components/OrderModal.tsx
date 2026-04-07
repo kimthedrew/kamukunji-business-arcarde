@@ -58,10 +58,23 @@ const OrderModal: React.FC<OrderModalProps> = ({ product, onClose }) => {
         payment_reference: formData.payment_reference || undefined
       });
 
-      setMessage('Order placed successfully! The shop owner will contact you soon.');
+      // Notify shop via WhatsApp
+      const phone = product.contact.replace(/\D/g, '');
+      const e164 = phone.startsWith('0') ? '254' + phone.slice(1) : phone;
+      const lines = [
+        `*New Order — ${product.shop_name}*`,
+        `Product: ${product.name} (Size ${formData.size})`,
+        `Customer: ${formData.customer_name} — ${formData.customer_contact}`,
+        formData.notes ? `Notes: ${formData.notes}` : '',
+        formData.payment_reference ? `Payment Ref: ${formData.payment_reference}` : '',
+        `Price: KSh ${product.price.toLocaleString()}`
+      ].filter(Boolean).join('\n');
+      window.open(`https://wa.me/${e164}?text=${encodeURIComponent(lines)}`, '_blank');
+
+      setMessage('Order placed! A WhatsApp message has been sent to the shop.');
       setTimeout(() => {
         onClose();
-      }, 2000);
+      }, 2500);
     } catch (error) {
       setMessage('Failed to place order. Please try again.');
       console.error('Order error:', error);

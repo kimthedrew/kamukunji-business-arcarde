@@ -187,7 +187,24 @@ const AnalyticsScreen: React.FC = () => {
             <div className="analytics-empty">All products are well-stocked.</div>
           ) : (
             <>
-              <p className="lowstock-note">Sizes with 5 or fewer units remaining</p>
+              <div className="lowstock-header">
+                <p className="lowstock-note">Sizes with 5 or fewer units remaining</p>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    '*Restock Reminder*\n\nThe following items need restocking:\n\n' +
+                    lowStock.map(item =>
+                      `• ${item.name}\n  ${item.low_stock_sizes.map(s =>
+                        `Size ${s.size}: ${s.quantity === 0 ? 'OUT OF STOCK' : `${s.quantity} left`}`
+                      ).join(', ')}`
+                    ).join('\n')
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-wa-restock"
+                >
+                  📲 WhatsApp Restock Reminder
+                </a>
+              </div>
               <div className="ls-list">
                 {lowStock.map(item => (
                   <div key={item.id} className="ls-row">

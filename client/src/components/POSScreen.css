@@ -518,3 +518,11 @@
     max-height: 360px;
   }
 }
+
+/* ── Print styles ── */
+@media print {
+  body > * { display: none !important; }
+  .modal-overlay { display: block !important; position: static !important; background: none !important; }
+  .pos-receipt-modal { display: block !important; box-shadow: none !important; border: none !important; max-width: 100% !important; }
+  .receipt-actions { display: none !important; }
+}

@@ -28,6 +28,8 @@ interface Stats {
   totalProducts: number;
   totalOrders: number;
   featuredShops?: number;
+  monthlyRevenue?: number;
+  planBreakdown?: { free: number; basic: number; premium: number };
 }
 
 const AdminDashboard: React.FC = () => {
@@ -35,6 +37,7 @@ const AdminDashboard: React.FC = () => {
   const [filteredShops, setFilteredShops] = useState<Shop[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,8 +73,9 @@ const AdminDashboard: React.FC = () => {
         api.get('/admin/shops'),
         api.get('/admin/stats')
       ]);
-      setShops(shopsRes.data);
-      setFilteredShops(shopsRes.data);
+      const shopData = Array.isArray(shopsRes.data) ? shopsRes.data : [];
+      setShops(shopData);
+      setFilteredShops(shopData);
       setStats(statsRes.data);
     } catch (error: any) {
       console.error('Failed to load data:', error);
@@ -79,6 +83,8 @@ const AdminDashboard: React.FC = () => {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('admin');
         navigate('/admin/login');
+      } else {
+        setFetchError(error.response?.data?.message || error.message || 'Failed to load shops from server.');
       }
     } finally {
       setLoading(false);
@@ -200,6 +206,30 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+              {stats?.monthlyRevenue !== undefined && (
+                <div className="stat-card">
+                  <div className="stat-icon">💰</div>
+                  <div className="stat-content">
+                    <h3>KSh {stats.monthlyRevenue.toLocaleString()}</h3>
+                    <p>Monthly Revenue</p>
+                  </div>
+                </div>
+              )}
+              {stats?.planBreakdown && (
+                <div className="stat-card">
+                  <div className="stat-icon">📊</div>
+                  <div className="stat-content">
+                    <h3>
+                      <span style={{ color: '#6b7280' }}>{stats.planBreakdown.free}F</span>
+                      {' · '}
+                      <span style={{ color: '#3b82f6' }}>{stats.planBreakdown.basic}B</span>
+                      {' · '}
+                      <span style={{ color: '#7c3aed' }}>{stats.planBreakdown.premium}P</span>
+                    </h3>
+                    <p>Plan Breakdown</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -230,6 +260,11 @@ const AdminDashboard: React.FC = () => {
               )}
             </div>
 
+            {fetchError && (
+              <div className="alert alert-error" style={{ marginBottom: '1rem' }}>
+                Could not load shops: {fetchError}
+              </div>
+            )}
             <ShopList
               shops={filteredShops}
               onStatusUpdate={handleShopStatusUpdate}

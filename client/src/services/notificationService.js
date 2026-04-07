@@ -35,6 +35,11 @@ class NotificationService {
       const response = await api.get('/notifications/vapid-key');
       const publicKey = response.data.publicKey;
 
+      if (!publicKey) {
+        console.log('Push notifications not configured on server (no VAPID key)');
+        return false;
+      }
+
       // Convert VAPID key to Uint8Array
       const urlBase64ToUint8Array = (base64String) => {
         const padding = '='.repeat((4 - base64String.length % 4) % 4);

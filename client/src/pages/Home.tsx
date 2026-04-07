@@ -5,7 +5,7 @@ import './Home.css';
 
 const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [shops, setShops] = useState([]);
+  const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -16,7 +16,8 @@ const Home: React.FC = () => {
   const fetchShops = async () => {
     try {
       const response = await api.get('/shops');
-      setShops(response.data.slice(0, 3)); // Show only first 3 shops
+      const data = Array.isArray(response.data) ? response.data : [];
+      setShops(data.slice(0, 3)); // Show only first 3 shops
     } catch (error) {
       console.error('Error fetching shops:', error);
     } finally {

@@ -114,40 +114,12 @@ if (actualPublicPath) {
     }
     next();
   });
-} else {
-  // Fallback: serve a simple HTML page if no public directory exists
-  app.get('*', (req, res) => {
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>KBA - Under Maintenance</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-            .container { max-width: 600px; margin: 0 auto; }
-            .error { color: #e74c3c; }
-            .info { color: #3498db; margin-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1 class="error">Application Under Maintenance</h1>
-            <p>The frontend files are not available. Please check the deployment logs.</p>
-            <div class="info">
-              <p>API endpoints are working:</p>
-              <p><a href="/api/health">Health Check</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `);
-  });
 }
 
-// Health check endpoint
+// Health check endpoints
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
+  res.status(200).json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV,
@@ -156,12 +128,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Simple health check for Koyeb
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Routes
+// API Routes — must be registered before any catch-all
 app.use('/api/auth', authRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/products', productRoutes);
@@ -205,7 +176,7 @@ app.post('/api/upload', async (req, res) => {
   }
 });
 
-// Serve React app (only if we have a public directory)
+// Serve React app or fallback — must come AFTER all API routes
 if (actualPublicPath) {
   // Catch-all handler: send back React's index.html file for page routes only
   // This should come AFTER static file middleware to avoid intercepting static files
@@ -245,6 +216,14 @@ if (actualPublicPath) {
     } else {
       console.error('React app not found at:', indexPath);
       res.status(404).send('React app not found');
+    }
+  });
+} else {
+  // In development the React dev server handles the frontend.
+  // Only catch non-API GET requests so unknown routes don't hang.
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+      res.status(404).json({ message: 'Not found' });
     }
   });
 }

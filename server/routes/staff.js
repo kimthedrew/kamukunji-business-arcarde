@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const supabase = require('../database-adapter');
+const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -12,44 +12,25 @@ const STAFF_LIMITS = { free: 0, basic: 1, premium: 3 };
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    const { data: staff, error } = await supabase
-      .from('shop_staff')
-      .select('*')
-      .eq('email', email.trim().toLowerCase())
-      .eq('is_active', true)
-      .single();
-
-    if (error || !staff) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    const { rows } = await db.query(
+      'SELECT * FROM shop_staff WHERE email = $1 AND is_active = true',
+      [email.trim().toLowerCase()]
+    );
+    const staff = rows[0];
+    if (!staff) return res.status(401).json({ message: 'Invalid credentials' });
 
     const isValid = await bcrypt.compare(password, staff.password);
-    if (!isValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!isValid) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign(
-      {
-        shop_id: staff.shop_id,
-        staff_id: staff.id,
-        role: 'staff',
-        staff_name: staff.name
-      },
+      { shop_id: staff.shop_id, staff_id: staff.id, role: 'staff', staff_name: staff.name },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
     res.json({
-      message: 'Login successful',
-      token,
-      staff: {
-        id: staff.id,
-        name: staff.name,
-        email: staff.email,
-        role: staff.role,
-        shop_id: staff.shop_id
-      }
+      message: 'Login successful', token,
+      staff: { id: staff.id, name: staff.name, email: staff.email, role: staff.role, shop_id: staff.shop_id }
     });
   } catch (error) {
     console.error('Staff login error:', error);
@@ -60,19 +41,12 @@ router.post('/login', async (req, res) => {
 // Get all staff for shop (owner only)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role === 'staff') {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    const { data, error } = await supabase
-      .from('shop_staff')
-      .select('id, name, email, role, is_active, created_at')
-      .eq('shop_id', req.user.shop_id)
-      .order('created_at', { ascending: true });
-
-    if (error) return res.status(500).json({ message: 'Database error' });
-
-    res.json(data || []);
+    if (req.user.role === 'staff') return res.status(403).json({ message: 'Not authorized' });
+    const { rows } = await db.query(
+      'SELECT id, name, email, role, is_active, created_at FROM shop_staff WHERE shop_id = $1 ORDER BY created_at ASC',
+      [req.user.shop_id]
+    );
+    res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -81,102 +55,64 @@ router.get('/', authenticateToken, async (req, res) => {
 // Add staff member (owner only)
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role === 'staff') {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
+    if (req.user.role === 'staff') return res.status(403).json({ message: 'Not authorized' });
 
     const shopId = req.user.shop_id;
     const { name, email, password, role = 'attendant' } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ message: 'name, email, and password are required' });
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'name, email, and password are required' });
-    }
-
-    // Check plan limit
-    const { data: subscription } = await supabase
-      .from('shop_subscriptions')
-      .select('plan')
-      .eq('shop_id', shopId)
-      .single();
-
-    const plan = subscription?.plan || 'free';
+    const { rows: subRows } = await db.query('SELECT plan FROM shop_subscriptions WHERE shop_id = $1', [shopId]);
+    const plan = subRows[0]?.plan || 'free';
     const limit = STAFF_LIMITS[plan] ?? 0;
 
-    if (limit === 0) {
-      return res.status(403).json({
-        message: 'Staff accounts require a Basic or Premium plan.',
-        code: 'PLAN_LIMIT',
-        plan
-      });
-    }
+    if (limit === 0) return res.status(403).json({ message: 'Staff accounts require a Basic or Premium plan.', code: 'PLAN_LIMIT', plan });
 
-    const { count: currentCount } = await supabase
-      .from('shop_staff')
-      .select('id', { count: 'exact' })
-      .eq('shop_id', shopId)
-      .eq('is_active', true);
-
-    if ((currentCount || 0) >= limit) {
+    const { rows: countRows } = await db.query(
+      'SELECT COUNT(*) FROM shop_staff WHERE shop_id = $1 AND is_active = true',
+      [shopId]
+    );
+    if (parseInt(countRows[0].count) >= limit) {
       return res.status(403).json({
         message: `Your ${plan} plan allows ${limit} staff account${limit > 1 ? 's' : ''}. Upgrade to Premium to add more.`,
-        code: 'STAFF_LIMIT',
-        limit,
-        plan
+        code: 'STAFF_LIMIT', limit, plan
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const { rows } = await db.query(
+      `INSERT INTO shop_staff (shop_id, name, email, password, role)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id, name, email, role, is_active, created_at`,
+      [shopId, name.trim(), email.trim().toLowerCase(), hashedPassword, role]
+    );
 
-    const { data, error } = await supabase
-      .from('shop_staff')
-      .insert({
-        shop_id: shopId,
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: hashedPassword,
-        role
-      })
-      .select('id, name, email, role, is_active, created_at')
-      .single();
-
-    if (error) {
-      if (error.code === '23505' || error.message?.includes('unique')) {
-        return res.status(409).json({ message: 'A staff member with this email already exists' });
-      }
-      console.error('Staff create error:', error);
-      return res.status(500).json({ message: 'Failed to create staff account' });
-    }
-
-    res.status(201).json({ message: 'Staff account created', staff: data });
+    res.status(201).json({ message: 'Staff account created', staff: rows[0] });
   } catch (error) {
+    if (error.code === '23505') return res.status(409).json({ message: 'A staff member with this email already exists' });
     console.error('Staff create error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Update staff — role or active status (owner only)
+// Update staff (owner only)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role === 'staff') {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
+    if (req.user.role === 'staff') return res.status(403).json({ message: 'Not authorized' });
 
     const { role, is_active } = req.body;
-    const updates = {};
-    if (role !== undefined) updates.role = role;
-    if (is_active !== undefined) updates.is_active = is_active;
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
+    if (role !== undefined)      { setClauses.push(`role = $${idx++}`);      values.push(role); }
+    if (is_active !== undefined) { setClauses.push(`is_active = $${idx++}`); values.push(is_active); }
+    if (setClauses.length === 0) return res.json({ message: 'Nothing to update' });
 
-    const { data, error } = await supabase
-      .from('shop_staff')
-      .update(updates)
-      .eq('id', req.params.id)
-      .eq('shop_id', req.user.shop_id)
-      .select('id, name, email, role, is_active');
-
-    if (error) return res.status(500).json({ message: 'Database error' });
-    if (!data || data.length === 0) return res.status(404).json({ message: 'Staff not found' });
-
-    res.json({ message: 'Staff updated', staff: data[0] });
+    values.push(req.params.id, req.user.shop_id);
+    const { rows } = await db.query(
+      `UPDATE shop_staff SET ${setClauses.join(', ')} WHERE id = $${idx} AND shop_id = $${idx + 1} RETURNING id, name, email, role, is_active`,
+      values
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'Staff not found' });
+    res.json({ message: 'Staff updated', staff: rows[0] });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -185,20 +121,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete staff (owner only)
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role === 'staff') {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    const { data, error } = await supabase
-      .from('shop_staff')
-      .delete()
-      .eq('id', req.params.id)
-      .eq('shop_id', req.user.shop_id)
-      .select();
-
-    if (error) return res.status(500).json({ message: 'Database error' });
-    if (!data || data.length === 0) return res.status(404).json({ message: 'Staff not found' });
-
+    if (req.user.role === 'staff') return res.status(403).json({ message: 'Not authorized' });
+    const { rows } = await db.query(
+      'DELETE FROM shop_staff WHERE id = $1 AND shop_id = $2 RETURNING id',
+      [req.params.id, req.user.shop_id]
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'Staff not found' });
     res.json({ message: 'Staff removed' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

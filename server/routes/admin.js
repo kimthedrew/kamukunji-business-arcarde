@@ -1,12 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const supabase = require('../database-adapter');
+const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Plan → default features map
 const PLAN_FEATURES = {
   free:    { pos_enabled: false, credit_enabled: false },
   basic:   { pos_enabled: true,  credit_enabled: true  },
@@ -17,33 +16,19 @@ const PLAN_FEATURES = {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    const { rows } = await db.query('SELECT * FROM admins WHERE username = $1', [username]);
+    const admin = rows[0];
+    if (!admin) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const { data: admin, error } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('username', username)
-      .single();
-
-    if (error || !admin) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const isValidPassword = await bcrypt.compare(password, admin.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    const isValid = await bcrypt.compare(password, admin.password);
+    if (!isValid) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign(
       { admin_id: admin.id, username: admin.username },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
-
-    res.json({
-      message: 'Login successful',
-      token,
-      admin: { id: admin.id, username: admin.username, email: admin.email }
-    });
+    res.json({ message: 'Login successful', token, admin: { id: admin.id, username: admin.username, email: admin.email } });
   } catch (error) {
     console.error('Admin login error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -53,33 +38,26 @@ router.post('/login', async (req, res) => {
 // Get all shops (admin only)
 router.get('/shops', authenticateToken, async (req, res) => {
   try {
-    const { data: shops, error } = await supabase
-      .from('shops')
-      .select(`
-        *,
-        shop_subscriptions(plan, status, monthly_fee, end_date)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Database error:', error);
-      return res.status(500).json({ message: 'Database error' });
-    }
+    const { rows } = await db.query(
+      `SELECT s.*,
+              sub.plan, sub.status AS subscription_status, sub.monthly_fee, sub.end_date AS subscription_end_date
+       FROM shops s
+       LEFT JOIN shop_subscriptions sub ON s.id = sub.shop_id
+       ORDER BY s.created_at DESC`
+    );
 
     const now = new Date();
-    const transformedShops = shops.map(shop => {
-      const sub = shop.shop_subscriptions?.[0];
-      const isExpired = sub?.end_date && new Date(sub.end_date) < now;
+    const shops = rows.map(shop => {
+      const isExpired = shop.subscription_end_date && new Date(shop.subscription_end_date) < now;
       return {
         ...shop,
-        plan: sub?.plan || 'free',
-        subscription_status: isExpired ? 'expired' : (sub?.status || 'active'),
-        monthly_fee: sub?.monthly_fee || 0,
-        subscription_end_date: sub?.end_date || null
+        plan: shop.plan || 'free',
+        subscription_status: isExpired ? 'expired' : (shop.subscription_status || 'active'),
+        monthly_fee: parseFloat(shop.monthly_fee) || 0
       };
     });
 
-    res.json(transformedShops);
+    res.json(shops);
   } catch (error) {
     console.error('Shops fetch error:', error);
     res.status(500).json({ message: 'Database error' });
@@ -89,18 +67,11 @@ router.get('/shops', authenticateToken, async (req, res) => {
 // Update shop status
 router.put('/shops/:id/status', authenticateToken, async (req, res) => {
   try {
-    const { status } = req.body;
-    const shopId = req.params.id;
-
-    const { data, error } = await supabase
-      .from('shops')
-      .update({ status })
-      .eq('id', shopId)
-      .select();
-
-    if (error) return res.status(500).json({ message: 'Database error' });
-    if (!data || data.length === 0) return res.status(404).json({ message: 'Shop not found' });
-
+    const { rows } = await db.query(
+      'UPDATE shops SET status = $1 WHERE id = $2 RETURNING id',
+      [req.body.status, req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ message: 'Shop not found' });
     res.json({ message: 'Shop status updated successfully' });
   } catch (error) {
     console.error('Shop status update error:', error);
@@ -108,27 +79,21 @@ router.put('/shops/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
-// Toggle shop features (pos_enabled, is_featured, credit_enabled)
+// Toggle shop features
 router.put('/shops/:id/features', authenticateToken, async (req, res) => {
   try {
     const { pos_enabled, is_featured, credit_enabled } = req.body;
-    const shopId = req.params.id;
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
+    if (pos_enabled !== undefined)    { setClauses.push(`pos_enabled = $${idx++}`);    values.push(pos_enabled); }
+    if (is_featured !== undefined)    { setClauses.push(`is_featured = $${idx++}`);    values.push(is_featured); }
+    if (credit_enabled !== undefined) { setClauses.push(`credit_enabled = $${idx++}`); values.push(credit_enabled); }
 
-    const updates = {};
-    if (pos_enabled !== undefined) updates.pos_enabled = pos_enabled;
-    if (is_featured !== undefined) updates.is_featured = is_featured;
-    if (credit_enabled !== undefined) updates.credit_enabled = credit_enabled;
+    if (setClauses.length === 0) return res.json({ message: 'Nothing to update' });
 
-    const { error } = await supabase
-      .from('shops')
-      .update(updates)
-      .eq('id', shopId);
-
-    if (error) {
-      console.error('Shop features update error:', error);
-      return res.status(500).json({ message: 'Database error' });
-    }
-
+    values.push(req.params.id);
+    await db.query(`UPDATE shops SET ${setClauses.join(', ')} WHERE id = $${idx}`, values);
     res.json({ message: 'Shop features updated successfully' });
   } catch (error) {
     console.error('Shop features update error:', error);
@@ -142,35 +107,18 @@ router.put('/shops/:id/subscription', authenticateToken, async (req, res) => {
     const { plan, monthly_fee, status, end_date } = req.body;
     const shopId = req.params.id;
 
-    // Delete existing subscription
-    await supabase
-      .from('shop_subscriptions')
-      .delete()
-      .eq('shop_id', shopId);
+    await db.query('DELETE FROM shop_subscriptions WHERE shop_id = $1', [shopId]);
+    await db.query(
+      `INSERT INTO shop_subscriptions (shop_id, plan, monthly_fee, status, start_date, end_date)
+       VALUES ($1,$2,$3,$4,NOW(),$5)`,
+      [shopId, plan, monthly_fee, status, end_date || null]
+    );
 
-    // Insert new subscription
-    const { error } = await supabase
-      .from('shop_subscriptions')
-      .insert({
-        shop_id: shopId,
-        plan,
-        monthly_fee,
-        status,
-        start_date: new Date().toISOString(),
-        end_date: end_date || null
-      });
-
-    if (error) {
-      console.error('Subscription update error:', error);
-      return res.status(500).json({ message: 'Database error' });
-    }
-
-    // Auto-apply plan-based features (can be overridden manually after)
     const planDefaults = PLAN_FEATURES[plan] || PLAN_FEATURES.free;
-    await supabase
-      .from('shops')
-      .update(planDefaults)
-      .eq('id', shopId);
+    await db.query(
+      'UPDATE shops SET pos_enabled = $1, credit_enabled = $2 WHERE id = $3',
+      [planDefaults.pos_enabled, planDefaults.credit_enabled, shopId]
+    );
 
     res.json({ message: 'Shop subscription updated successfully' });
   } catch (error) {
@@ -183,57 +131,46 @@ router.put('/shops/:id/subscription', authenticateToken, async (req, res) => {
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const adminId = req.user.admin_id;
+    const { rows } = await db.query('SELECT * FROM admins WHERE id = $1', [req.user.admin_id]);
+    if (rows.length === 0) return res.status(404).json({ message: 'Admin not found' });
 
-    const { data: admin, error: adminError } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('id', adminId)
-      .single();
+    const isValid = await bcrypt.compare(currentPassword, rows[0].password);
+    if (!isValid) return res.status(400).json({ message: 'Current password is incorrect' });
 
-    if (adminError || !admin) {
-      return res.status(404).json({ message: 'Admin not found' });
-    }
-
-    const isValidPassword = await bcrypt.compare(currentPassword, admin.password);
-    if (!isValidPassword) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    const { error: updateError } = await supabase
-      .from('admins')
-      .update({ password: hashedPassword })
-      .eq('id', adminId);
-
-    if (updateError) {
-      return res.status(500).json({ message: 'Failed to update password' });
-    }
-
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE admins SET password = $1 WHERE id = $2', [hashed, req.user.admin_id]);
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get dashboard stats
+// Dashboard stats
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
-    const [shopsResult, activeShopsResult, productsResult, ordersResult, featuredResult] = await Promise.all([
-      supabase.from('shops').select('id', { count: 'exact' }),
-      supabase.from('shops').select('id', { count: 'exact' }).eq('status', 'active'),
-      supabase.from('products').select('id', { count: 'exact' }),
-      supabase.from('orders').select('id', { count: 'exact' }),
-      supabase.from('shops').select('id', { count: 'exact' }).eq('is_featured', true)
+    const [total, active, products, orders, featured, subs] = await Promise.all([
+      db.query('SELECT COUNT(*) FROM shops'),
+      db.query("SELECT COUNT(*) FROM shops WHERE status = 'active'"),
+      db.query('SELECT COUNT(*) FROM products'),
+      db.query('SELECT COUNT(*) FROM orders'),
+      db.query('SELECT COUNT(*) FROM shops WHERE is_featured = true'),
+      db.query('SELECT plan, status, monthly_fee FROM shop_subscriptions')
     ]);
 
+    const allSubs = subs.rows;
+    const activeSubs = allSubs.filter(s => s.status === 'active');
+    const monthlyRevenue = activeSubs.reduce((sum, s) => sum + parseFloat(s.monthly_fee || 0), 0);
+    const planBreakdown = { free: 0, basic: 0, premium: 0 };
+    allSubs.forEach(s => { if (planBreakdown[s.plan] !== undefined) planBreakdown[s.plan]++; });
+
     res.json({
-      totalShops: shopsResult.count || 0,
-      activeShops: activeShopsResult.count || 0,
-      totalProducts: productsResult.count || 0,
-      totalOrders: ordersResult.count || 0,
-      featuredShops: featuredResult.count || 0
+      totalShops: parseInt(total.rows[0].count),
+      activeShops: parseInt(active.rows[0].count),
+      totalProducts: parseInt(products.rows[0].count),
+      totalOrders: parseInt(orders.rows[0].count),
+      featuredShops: parseInt(featured.rows[0].count),
+      monthlyRevenue,
+      planBreakdown
     });
   } catch (error) {
     console.error('Stats error:', error);
