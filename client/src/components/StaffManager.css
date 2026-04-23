@@ -111,10 +111,12 @@
 .sli-title { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px; }
 .sli-desc { font-size: 0.82rem; color: #6b7280; margin: 0; line-height: 1.5; }
 
+.staff-form { padding: 0 24px 24px; }
 .staff-form .form-group { margin-bottom: 14px; }
 
 @media (max-width: 640px) {
   .staff-card { flex-wrap: wrap; }
   .staff-actions { width: 100%; }
   .staff-plan-banner { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .staff-form { padding-left: 20px; padding-right: 20px; }
 }

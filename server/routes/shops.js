@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { shop_id: shop.id, shop_number: shop.shop_number },
-      process.env.JWT_SECRET || 'your-secret-key',
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
     res.json({
@@ -32,14 +32,40 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get all active shops (public) — featured first
+// Get all active shops (public) — featured first, with rating
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await db.query(
-      `SELECT id, shop_number, shop_name, contact, email, status, is_featured, banner_url, business_hours
-       FROM shops WHERE status = 'active'
-       ORDER BY is_featured DESC, shop_number ASC`
-    );
+    // Try with subquery-computed ratings (works even before migration-v2 is run)
+    let rows;
+    try {
+      const result = await db.query(
+        `SELECT s.id, s.shop_number, s.shop_name, s.contact, s.email, s.status,
+                s.is_featured, s.banner_url, s.business_hours,
+                COALESCE(r.avg_rating, 0)   AS avg_rating,
+                COALESCE(r.review_count, 0) AS review_count
+         FROM shops s
+         LEFT JOIN (
+           SELECT shop_id,
+                  AVG(rating)::NUMERIC(3,1) AS avg_rating,
+                  COUNT(*)                  AS review_count
+           FROM shop_reviews
+           GROUP BY shop_id
+         ) r ON r.shop_id = s.id
+         WHERE s.status = 'active'
+         ORDER BY s.is_featured DESC, COALESCE(r.avg_rating, 0) DESC, s.shop_number ASC`
+      );
+      rows = result.rows;
+    } catch {
+      // shop_reviews table not yet created — fall back to simple query
+      const result = await db.query(
+        `SELECT id, shop_number, shop_name, contact, email, status,
+                is_featured, banner_url, business_hours,
+                0 AS avg_rating, 0 AS review_count
+         FROM shops WHERE status = 'active'
+         ORDER BY is_featured DESC, shop_number ASC`
+      );
+      rows = result.rows;
+    }
     res.json(rows);
   } catch (error) {
     console.error('Shops fetch error:', error);

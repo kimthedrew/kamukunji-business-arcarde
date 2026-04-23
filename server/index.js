@@ -2,7 +2,24 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const compression = require('compression');
+const pino = require('pino');
+const pinoHttp = require('pino-http');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Logger — pino-pretty only in dev
+const loggerOptions = {
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+};
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    require.resolve('pino-pretty');
+    loggerOptions.transport = { target: 'pino-pretty' };
+  } catch {}
+}
+const logger = pino(loggerOptions);
 
 const authRoutes = require('./routes/auth');
 const shopRoutes = require('./routes/shops');
@@ -14,8 +31,13 @@ const posRoutes = require('./routes/pos');
 const analyticsRoutes = require('./routes/analytics');
 const creditsRoutes = require('./routes/credits');
 const staffRoutes = require('./routes/staff');
+const mpesaRoutes = require('./routes/mpesa');
+const smsRoutes = require('./routes/sms');
+const reviewRoutes = require('./routes/reviews');
+const customerRoutes = require('./routes/customers');
 
 const app = express();
+app.locals.logger = logger;
 const PORT = process.env.PORT || 8000;
 
 // Configure Cloudinary
@@ -25,14 +47,42 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled — React app handles CSP
+  crossOriginEmbedderPolicy: false
+}));
+app.use(compression());
+
+// HTTP request logging
+app.use(pinoHttp({ logger, autoLogging: process.env.NODE_ENV !== 'test' }));
+
+// Rate limiting
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  message: { message: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // 20 login attempts per 15 min
+  message: { message: 'Too many login attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/admin/login', authLimiter);
+app.use('/api/staff/login', authLimiter);
+app.use('/api/customers/login', authLimiter);
+
 // Middleware
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001', 
-    'https://your-koyeb-app-url.koyeb.app',
-    process.env.CLIENT_URL || 'http://localhost:3000'
-  ],
+  origin: true, // Permissive — restrict in production via CLIENT_URL env
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -143,6 +193,10 @@ app.use('/api/pos', posRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/credits', creditsRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/mpesa', mpesaRoutes);
+app.use('/api/sms', smsRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Cloudinary upload route
 app.post('/api/upload', async (req, res) => {
@@ -227,6 +281,16 @@ if (actualPublicPath) {
     }
   });
 }
+
+// Global error handler — must come after all routes
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  logger.error({ err, req: { method: req.method, url: req.url } }, 'Unhandled error');
+  res.status(status).json({
+    message: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
+});
 
 // Start the server
 const server = app.listen(PORT, '0.0.0.0', () => {

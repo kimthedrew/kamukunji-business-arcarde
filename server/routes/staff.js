@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { shop_id: staff.shop_id, staff_id: staff.id, role: 'staff', staff_name: staff.name },
-      process.env.JWT_SECRET || 'your-secret-key',
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 

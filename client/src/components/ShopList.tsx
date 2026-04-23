@@ -16,6 +16,9 @@ interface Shop {
   pos_enabled?: boolean;
   credit_enabled?: boolean;
   is_featured?: boolean;
+  mpesa_stk_enabled?: boolean;
+  avg_rating?: number;
+  review_count?: number;
 }
 
 interface ShopListProps {
@@ -82,6 +85,11 @@ const ShopList: React.FC<ShopListProps> = ({ shops, onStatusUpdate, onSubscripti
                   {shop.shop_name}
                 </h3>
                 <p className="shop-number">Shop {shop.shop_number}</p>
+                {shop.avg_rating !== undefined && shop.avg_rating > 0 && (
+                  <p className="shop-rating-info" style={{ fontSize: '0.8rem', color: '#f59e0b' }}>
+                    {'★'.repeat(Math.round(shop.avg_rating))} {shop.avg_rating} ({shop.review_count} reviews)
+                  </p>
+                )}
               </div>
               <div className={`status-badge ${getStatusColor(shop.status)}`}>
                 {shop.status.charAt(0).toUpperCase() + shop.status.slice(1)}
@@ -140,33 +148,22 @@ const ShopList: React.FC<ShopListProps> = ({ shops, onStatusUpdate, onSubscripti
 
               {/* Feature toggles */}
               <div className="features-controls">
-                <div className="feature-row">
-                  <span className="feature-label">POS</span>
-                  <button
-                    onClick={() => onFeaturesUpdate(shop.id, { pos_enabled: !shop.pos_enabled })}
-                    className={`feature-toggle-btn ${shop.pos_enabled ? 'enabled' : ''}`}
-                  >
-                    {shop.pos_enabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-label">Credit Tracker</span>
-                  <button
-                    onClick={() => onFeaturesUpdate(shop.id, { credit_enabled: !shop.credit_enabled })}
-                    className={`feature-toggle-btn ${shop.credit_enabled ? 'enabled' : ''}`}
-                  >
-                    {shop.credit_enabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-                <div className="feature-row">
-                  <span className="feature-label">Featured</span>
-                  <button
-                    onClick={() => onFeaturesUpdate(shop.id, { is_featured: !shop.is_featured })}
-                    className={`feature-toggle-btn featured ${shop.is_featured ? 'enabled' : ''}`}
-                  >
-                    {shop.is_featured ? '★ YES' : '☆ NO'}
-                  </button>
-                </div>
+                {[
+                  { key: 'pos_enabled',       label: 'POS',           value: shop.pos_enabled },
+                  { key: 'credit_enabled',     label: 'Credit Tracker',value: shop.credit_enabled },
+                  { key: 'is_featured',        label: '⭐ Featured',   value: shop.is_featured },
+                  { key: 'mpesa_stk_enabled',  label: '💳 M-Pesa STK', value: shop.mpesa_stk_enabled },
+                ].map(({ key, label, value }) => (
+                  <div className="feature-row" key={key}>
+                    <span className="feature-label">{label}</span>
+                    <button
+                      onClick={() => onFeaturesUpdate(shop.id, { [key]: !value } as any)}
+                      className={`feature-toggle-btn ${value ? 'enabled' : ''}`}
+                    >
+                      {value ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+                ))}
               </div>
 
               {/* Subscription editor */}

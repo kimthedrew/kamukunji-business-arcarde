@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { admin_id: admin.id, username: admin.username },
-      process.env.JWT_SECRET || 'your-secret-key',
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
     res.json({ message: 'Login successful', token, admin: { id: admin.id, username: admin.username, email: admin.email } });
@@ -82,13 +82,24 @@ router.put('/shops/:id/status', authenticateToken, async (req, res) => {
 // Toggle shop features
 router.put('/shops/:id/features', authenticateToken, async (req, res) => {
   try {
-    const { pos_enabled, is_featured, credit_enabled } = req.body;
+    const { pos_enabled, is_featured, credit_enabled, mpesa_stk_enabled } = req.body;
     const setClauses = [];
     const values = [];
     let idx = 1;
     if (pos_enabled !== undefined)    { setClauses.push(`pos_enabled = $${idx++}`);    values.push(pos_enabled); }
     if (is_featured !== undefined)    { setClauses.push(`is_featured = $${idx++}`);    values.push(is_featured); }
     if (credit_enabled !== undefined) { setClauses.push(`credit_enabled = $${idx++}`); values.push(credit_enabled); }
+
+    // mpesa_stk_enabled only if the column exists (migration-v2 required)
+    if (mpesa_stk_enabled !== undefined) {
+      try {
+        await db.query('SELECT mpesa_stk_enabled FROM shops LIMIT 1');
+        setClauses.push(`mpesa_stk_enabled = $${idx++}`);
+        values.push(mpesa_stk_enabled);
+      } catch {
+        // column not yet created — skip silently
+      }
+    }
 
     if (setClauses.length === 0) return res.json({ message: 'Nothing to update' });
 

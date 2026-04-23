@@ -95,7 +95,8 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onImportComplete, onClose }) 
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
-        {!result ? (
+        <div className="csv-body">
+      {!result ? (
           <>
             <div className="csv-instructions">
               <p>Upload a CSV file with columns: <code>name</code>, <code>category</code>, <code>price</code>, <code>description</code>, <code>sizes</code>, <code>image_url</code></p>
@@ -172,6 +173,7 @@ const CSVImporter: React.FC<CSVImporterProps> = ({ onImportComplete, onClose }) 
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

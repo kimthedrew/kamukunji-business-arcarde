@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/axiosConfig';
+import { ProductCardSkeleton } from '../components/Skeleton';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -8,16 +10,17 @@ const Home: React.FC = () => {
   const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    fetchShops();
-  }, []);
+  useEffect(() => { fetchShops(); }, []);
 
   const fetchShops = async () => {
     try {
       const response = await api.get('/shops');
       const data = Array.isArray(response.data) ? response.data : [];
-      setShops(data.slice(0, 3)); // Show only first 3 shops
+      // Show featured shops first, then cap at 3
+      const sorted = [...data].sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+      setShops(sorted.slice(0, 3));
     } catch (error) {
       console.error('Error fetching shops:', error);
     } finally {
@@ -27,28 +30,25 @@ const Home: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
+    if (searchQuery.trim()) navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   return (
     <div className="home">
       <section className="hero">
         <div className="container">
-          <h1>Find Your Perfect Shoes</h1>
-          <p>Search across all shops in Kamukunji Business Arcade</p>
-          
+          <h1>{t('heroTitle')}</h1>
+          <p>{t('heroSubtitle')}</p>
           <form onSubmit={handleSearch} className="search-bar">
             <input
               type="text"
-              placeholder="Search for shoes, brands, sizes..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
             />
             <button type="submit" className="btn btn-primary search-btn">
-              Search
+              {t('searchBtn')}
             </button>
           </form>
         </div>
@@ -56,22 +56,22 @@ const Home: React.FC = () => {
 
       <section className="features">
         <div className="container">
-          <h2 className="text-center mb-8">Why Choose Our Platform?</h2>
+          <h2 className="text-center mb-8">{t('whyChoose')}</h2>
           <div className="grid grid-3">
             <div className="card text-center">
               <div className="feature-icon">🔍</div>
-              <h3>Easy Search</h3>
-              <p>Find shoes across all shops in the arcade without walking from shop to shop.</p>
+              <h3>{t('easySearch')}</h3>
+              <p>{t('easySearchDesc')}</p>
             </div>
             <div className="card text-center">
               <div className="feature-icon">📱</div>
-              <h3>Real-time Stock</h3>
-              <p>See which sizes are available in real-time before visiting the shop.</p>
+              <h3>{t('realTimeStock')}</h3>
+              <p>{t('realTimeStockDesc')}</p>
             </div>
             <div className="card text-center">
               <div className="feature-icon">🛒</div>
-              <h3>Easy Ordering</h3>
-              <p>Place orders directly with shop owners and pick up at your convenience.</p>
+              <h3>{t('easyOrdering')}</h3>
+              <p>{t('easyOrderingDesc')}</p>
             </div>
           </div>
         </div>
@@ -79,35 +79,40 @@ const Home: React.FC = () => {
 
       <section className="shops-preview">
         <div className="container">
-          <h2 className="text-center mb-8">Our Partner Shops</h2>
-          <p className="text-center mb-8">Browse products from our trusted shop partners</p>
-          
+          <h2 className="text-center mb-8">{t('ourPartnerShops')}</h2>
+          <p className="text-center mb-8">{t('partnerShopsDesc')}</p>
+
           {loading ? (
-            <div className="text-center">Loading shops...</div>
+            <div className="grid grid-3">
+              <ProductCardSkeleton />
+              <ProductCardSkeleton />
+              <ProductCardSkeleton />
+            </div>
           ) : (
             <div className="shops-grid">
               {shops.map((shop: any) => (
                 <div key={shop.id} className="shop-card">
+                  {shop.is_featured && <div className="featured-badge">⭐ Featured</div>}
+                  {shop.avg_rating > 0 && (
+                    <div className="shop-rating">
+                      {'★'.repeat(Math.round(shop.avg_rating))}{'☆'.repeat(5 - Math.round(shop.avg_rating))}
+                      <span className="rating-num"> {shop.avg_rating}</span>
+                    </div>
+                  )}
                   <h3>{shop.shop_name}</h3>
                   <p className="shop-number">Shop #{shop.shop_number}</p>
                   <p className="shop-contact">📞 {shop.contact}</p>
-                  <button 
-                    onClick={() => navigate(`/shops/${shop.id}`)}
-                    className="btn btn-outline"
-                  >
-                    View Products
+                  <button onClick={() => navigate(`/shops/${shop.id}`)} className="btn btn-outline">
+                    {t('viewProducts')}
                   </button>
                 </div>
               ))}
             </div>
           )}
-          
+
           <div className="text-center mt-8">
-            <button 
-              onClick={() => navigate('/shops')}
-              className="btn btn-primary"
-            >
-              View All Shops
+            <button onClick={() => navigate('/shops')} className="btn btn-primary">
+              {t('viewAllShops')}
             </button>
           </div>
         </div>
@@ -115,13 +120,10 @@ const Home: React.FC = () => {
 
       <section className="cta">
         <div className="container text-center">
-          <h2>Ready to Find Your Shoes?</h2>
-          <p className="mb-6">Start searching for the perfect pair today!</p>
-          <button 
-            onClick={() => navigate('/search')}
-            className="btn btn-primary btn-lg"
-          >
-            Browse All Shoes
+          <h2>{t('readyToFind')}</h2>
+          <p className="mb-6">{t('startSearching')}</p>
+          <button onClick={() => navigate('/search')} className="btn btn-primary btn-lg">
+            {t('browseAllShoes')}
           </button>
         </div>
       </section>
@@ -130,4 +132,3 @@ const Home: React.FC = () => {
 };
 
 export default Home;
-

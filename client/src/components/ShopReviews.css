@@ -1,0 +1,55 @@
+.shop-reviews {
+  margin-top: 2rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.5rem;
+}
+
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.reviews-summary h3 { margin: 0 0 0.25rem; font-size: 1.1rem; color: var(--color-text-primary); }
+
+.avg-rating { display: flex; align-items: center; gap: 0.5rem; }
+.avg-num    { font-size: 0.9rem; font-weight: 700; color: var(--color-text-primary); }
+
+.star-rating { user-select: none; }
+.star.filled { color: #f59e0b; }
+.star        { color: #d1d5db; }
+
+.review-form { margin-bottom: 1.5rem; }
+
+.reviews-list { display: flex; flex-direction: column; gap: 0; }
+
+.review-item {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-item:last-child { border-bottom: none; }
+
+.review-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.reviewer-name { font-size: 0.9rem; color: var(--color-text-primary); }
+.review-date   { font-size: 0.8rem; margin-left: auto; }
+.review-comment { font-size: 0.9rem; color: var(--color-text-secondary); margin: 0; }
+.no-reviews    { text-align: center; padding: 1.5rem 0; }
+
+.reviews-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}

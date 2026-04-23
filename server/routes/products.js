@@ -277,6 +277,74 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// ── Bulk edit products ───────────────────────────────────────────────────────
+// PUT /api/products/bulk-edit
+// Body: { product_ids: [], changes: { price?, category?, in_stock? } }
+router.put('/bulk-edit', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role === 'staff') return res.status(403).json({ message: 'Staff cannot bulk-edit products' });
+    const { product_ids, changes } = req.body;
+    if (!Array.isArray(product_ids) || !product_ids.length) return res.status(400).json({ message: 'No product IDs provided' });
+    if (!changes || !Object.keys(changes).length)            return res.status(400).json({ message: 'No changes provided' });
+
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
+
+    if (changes.price !== undefined && !isNaN(Number(changes.price))) {
+      setClauses.push(`price = $${idx++}`);
+      values.push(Number(changes.price));
+    }
+    if (changes.category) {
+      setClauses.push(`category = $${idx++}`);
+      values.push(changes.category);
+    }
+
+    if (setClauses.length) {
+      const placeholders = product_ids.map(() => `$${idx++}`).join(', ');
+      values.push(...product_ids);
+      await db.query(
+        `UPDATE products SET ${setClauses.join(', ')} WHERE id IN (${placeholders}) AND shop_id = $${idx}`,
+        [...values, req.user.shop_id]
+      );
+    }
+
+    // Handle stock toggle — applies to all sizes of selected products
+    if (changes.in_stock !== undefined) {
+      const placeholders = product_ids.map((_, i) => `$${i + 2}`).join(', ');
+      await db.query(
+        `UPDATE product_sizes SET in_stock = $1 WHERE product_id IN (${placeholders})`,
+        [changes.in_stock, ...product_ids]
+      );
+    }
+
+    res.json({ message: `Updated ${product_ids.length} products successfully` });
+  } catch (error) {
+    console.error('Bulk edit error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
+// ── Low stock check ──────────────────────────────────────────────────────────
+// GET /api/products/low-stock?threshold=5
+router.get('/low-stock', authenticateToken, async (req, res) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 5;
+    const { rows } = await db.query(
+      `SELECT p.id, p.name, p.category, ps.size, ps.quantity
+       FROM product_sizes ps
+       JOIN products p ON ps.product_id = p.id
+       WHERE p.shop_id = $1 AND ps.quantity <= $2 AND ps.quantity >= 0
+       ORDER BY ps.quantity ASC`,
+      [req.user.shop_id, threshold]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Low stock check error:', error);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
+
 // Debug token
 router.get('/debug/token', authenticateToken, async (req, res) => {
   try {

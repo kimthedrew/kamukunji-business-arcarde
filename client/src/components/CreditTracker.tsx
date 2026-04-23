@@ -61,7 +61,7 @@ const CreditTracker: React.FC = () => {
 
   const totalOutstanding = sales
     .filter(s => s.status !== 'cleared')
-    .reduce((sum, s) => sum + s.balance, 0);
+    .reduce((sum, s) => sum + Number(s.balance), 0);
 
   const handleAddSale = async (e: React.FormEvent) => {
     e.preventDefault();

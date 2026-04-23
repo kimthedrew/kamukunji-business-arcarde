@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/axiosConfig';
 import ProductCard from '../components/ProductCard';
 import OrderModal from '../components/OrderModal';
+import ShopReviews from '../components/ShopReviews';
+import { ProductCardSkeleton } from '../components/Skeleton';
 import './ShopProducts.css';
 
 const ShopProducts = () => {
@@ -39,7 +41,12 @@ const ShopProducts = () => {
   if (loading) {
     return (
       <div className="shop-products-container">
-        <div className="loading">Loading shop products...</div>
+        <div className="container" style={{ padding: '2rem 0' }}>
+          <div style={{ height: 200, background: 'var(--color-border)', borderRadius: 12, marginBottom: 16 }} className="skeleton" />
+          <div className="products-grid">
+            <ProductCardSkeleton /><ProductCardSkeleton /><ProductCardSkeleton />
+          </div>
+        </div>
       </div>
     );
   }
@@ -128,10 +135,19 @@ const ShopProducts = () => {
           </div>
         )}
       </div>
+      {/* Reviews section */}
+      <div className="reviews-section" style={{ padding: '0 20px 3rem' }}>
+        <ShopReviews
+          shopId={shopId}
+          avgRating={shop.avg_rating}
+          reviewCount={shop.review_count}
+        />
+      </div>
+
       {showOrderModal && selectedProduct && (
-        <OrderModal 
-          product={selectedProduct} 
-          onClose={() => setShowOrderModal(false)} 
+        <OrderModal
+          product={selectedProduct}
+          onClose={() => setShowOrderModal(false)}
         />
       )}
     </div>

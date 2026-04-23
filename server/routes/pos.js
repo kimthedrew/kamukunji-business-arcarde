@@ -116,4 +116,53 @@ router.get('/summary', authenticateToken, async (req, res) => {
   }
 });
 
+// ── Void / Refund a POS sale ──────────────────────────────────────────────────
+// POST /api/pos/void/:orderId
+// Body: { reason }  — restores inventory and marks sale as voided
+router.post('/void/:orderId', authenticateToken, async (req, res) => {
+  try {
+    const shopId = req.user.shop_id;
+    const { reason } = req.body;
+
+    const { rows: orderRows } = await db.query(
+      `SELECT o.*, p.name AS product_name FROM orders o
+       JOIN products p ON o.product_id = p.id
+       WHERE o.id = $1 AND o.shop_id = $2`,
+      [req.params.orderId, shopId]
+    );
+    if (!orderRows.length) return res.status(404).json({ message: 'Order not found or not authorized' });
+
+    const order = orderRows[0];
+    if (order.status === 'voided') return res.status(400).json({ message: 'Order already voided' });
+    if (order.source !== 'pos')   return res.status(400).json({ message: 'Only POS sales can be voided here' });
+
+    // Restore inventory
+    if (order.size) {
+      const { rows: sizeRows } = await db.query(
+        'SELECT id, quantity FROM product_sizes WHERE product_id = $1 AND size = $2',
+        [order.product_id, order.size]
+      );
+      if (sizeRows.length) {
+        const restoredQty = (sizeRows[0].quantity || 0) + 1;
+        await db.query(
+          'UPDATE product_sizes SET quantity = $1, in_stock = true WHERE id = $2',
+          [restoredQty, sizeRows[0].id]
+        );
+      }
+    }
+
+    await db.query(
+      `UPDATE orders SET status = 'voided', payment_status = 'voided',
+       notes = CONCAT(COALESCE(notes, ''), ' | VOIDED: ', $1)
+       WHERE id = $2`,
+      [reason || 'No reason given', req.params.orderId]
+    );
+
+    res.json({ message: 'Sale voided and inventory restored' });
+  } catch (error) {
+    console.error('Void sale error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

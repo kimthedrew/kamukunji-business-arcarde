@@ -1,3 +1,35 @@
+/* ── CSS Custom Properties (light theme) ──────────────────────────────────── */
+:root {
+  --color-bg:           #f8fafc;
+  --color-surface:      #ffffff;
+  --color-border:       #e5e7eb;
+  --color-text-primary: #1a202c;
+  --color-text-secondary: #6b7280;
+  --color-primary:      #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-success:      #10b981;
+  --color-danger:       #ef4444;
+  --color-warning:      #f59e0b;
+  --color-card-shadow:  0 4px 6px -1px rgba(0,0,0,0.10);
+  --color-input-bg:     #ffffff;
+  --color-nav-bg:       #1e293b;
+  --color-nav-text:     #ffffff;
+}
+
+/* ── Dark theme overrides ─────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --color-bg:           #0f172a;
+  --color-surface:      #1e293b;
+  --color-border:       #334155;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-primary:      #60a5fa;
+  --color-primary-dark: #3b82f6;
+  --color-card-shadow:  0 4px 6px -1px rgba(0,0,0,0.40);
+  --color-input-bg:     #1e293b;
+  --color-nav-bg:       #0f172a;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -10,8 +42,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
-  color: #1a202c;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .App {
@@ -86,11 +119,12 @@ body {
 }
 
 .card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--color-card-shadow);
   padding: 24px;
   margin-bottom: 20px;
+  border: 1px solid var(--color-border);
 }
 
 .form-group {
@@ -101,36 +135,40 @@ body {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-primary);
 }
 
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.2s;
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .form-textarea {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: 16px;
   min-height: 100px;
   resize: vertical;
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
 }
 
 .form-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .grid {
@@ -250,11 +288,12 @@ body {
 }
 
 .product-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--color-card-shadow);
   transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--color-border);
 }
 
 .product-card:hover {
@@ -341,19 +380,51 @@ body {
   border: 1px solid #bfdbfe;
 }
 
+/* ── Loading Skeletons ────────────────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.skeleton {
+  background: var(--color-border);
+  border-radius: 6px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.skeleton-text    { height: 1em; margin-bottom: 0.5em; }
+.skeleton-title   { height: 1.5em; width: 60%; margin-bottom: 1em; }
+.skeleton-image   { height: 200px; border-radius: 8px; margin-bottom: 1em; }
+.skeleton-btn     { height: 42px; width: 120px; border-radius: 8px; }
+.skeleton-card    { background: var(--color-surface); border-radius: 12px; padding: 1rem; border: 1px solid var(--color-border); }
+
+/* ── Mobile bottom padding (leave room for bottom nav) ─────────────────────── */
+@media (max-width: 768px) {
+  .App { padding-bottom: 72px; }
+}
+
+/* ── Text color helpers ────────────────────────────────────────────────────── */
+.text-danger  { color: var(--color-danger); }
+.text-success { color: var(--color-success); }
+.text-muted   { color: var(--color-text-secondary); }
+
+/* ── btn-sm ────────────────────────────────────────────────────────────────── */
+.btn-sm { padding: 6px 12px; font-size: 14px; }
+
+/* ── btn-lg ────────────────────────────────────────────────────────────────── */
+.btn-lg { padding: 16px 32px; font-size: 18px; }
+
 @media (max-width: 768px) {
   .hero h1 {
     font-size: 36px;
   }
-  
+
   .hero p {
     font-size: 18px;
   }
-  
+
   .container {
     padding: 0 16px;
   }
-  
+
   .grid-2,
   .grid-3,
   .grid-4 {
